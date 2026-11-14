@@ -80,7 +80,8 @@ export function fakePriceKey(query: PriceQuery): string {
 function fakeUnit(query: PriceQuery): string {
   if (query.kind.endsWith('GB_MONTH')) return 'GB-Mo';
   if (query.kind.startsWith('LAMBDA_')) return 'Lambda-GB-Second';
-  if (query.kind === 'DYNAMODB_ON_DEMAND_REQUEST_UNIT') return `${query.request === 'READ' ? 'Read' : 'Write'}RequestUnits`;
+  if (query.kind === 'DYNAMODB_ON_DEMAND_REQUEST_UNIT')
+    return `${query.request === 'READ' ? 'Read' : 'Write'}RequestUnits`;
   return 'Hrs';
 }
 

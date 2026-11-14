@@ -345,10 +345,9 @@ async function compute(request: SavingsRequest, pricing: PriceProvider): Promise
       const surchargeHourly = surcharge?.ok ? surcharge.price.unitPriceUsd : 0;
       return {
         monthly: (controlHourly + surchargeHourly) * HOURS_PER_MONTH,
-        method:
-          surcharge?.ok
-            ? `(${fmt(controlHourly)} control plane + ${fmt(surchargeHourly)} extended support) USD/hr x ${HOURS_PER_MONTH} hr`
-            : `${fmt(controlHourly)} USD/hr (EKS control plane) x ${HOURS_PER_MONTH} hr`,
+        method: surcharge?.ok
+          ? `(${fmt(controlHourly)} control plane + ${fmt(surchargeHourly)} extended support) USD/hr x ${HOURS_PER_MONTH} hr`
+          : `${fmt(controlHourly)} USD/hr (EKS control plane) x ${HOURS_PER_MONTH} hr`,
         assumptions: [
           HOURS_ASSUMPTION,
           'Control-plane charges only: worker nodes, Fargate pods, load balancers, EBS volumes and other resources used by the cluster are billed separately and are not included.',
@@ -405,7 +404,8 @@ async function compute(request: SavingsRequest, pricing: PriceProvider): Promise
         lookup(pricing, { ...base, cacheNodeType: request.currentNodeType }),
         lookup(pricing, { ...base, cacheNodeType: request.targetNodeType }),
       ]);
-      if (!current.ok) return { unavailable: `Current node type ${request.currentNodeType}: ${current.reason}` };
+      if (!current.ok)
+        return { unavailable: `Current node type ${request.currentNodeType}: ${current.reason}` };
       if (!target.ok) return { unavailable: `Target node type ${request.targetNodeType}: ${target.reason}` };
       const diff = current.price.unitPriceUsd - target.price.unitPriceUsd;
       if (diff <= 0) {
@@ -469,7 +469,9 @@ async function compute(request: SavingsRequest, pricing: PriceProvider): Promise
       for (const part of priced) {
         if (!part.l.ok) return { unavailable: `${part.label} storage: ${part.l.reason}` };
         monthly += part.gb * part.l.price.unitPriceUsd;
-        terms.push(`${fmt(part.gb)} GB x ${fmt(part.l.price.unitPriceUsd)} USD/GB-month (${part.storageClass})`);
+        terms.push(
+          `${fmt(part.gb)} GB x ${fmt(part.l.price.unitPriceUsd)} USD/GB-month (${part.storageClass})`,
+        );
         sources.push(part.l.ref);
       }
       return {
@@ -516,7 +518,9 @@ async function compute(request: SavingsRequest, pricing: PriceProvider): Promise
       const readReduction = Math.max(0, request.currentRcu - request.recommendedRcu);
       const writeReduction = Math.max(0, request.currentWcu - request.recommendedWcu);
       if (readReduction === 0 && writeReduction === 0) {
-        return { unavailable: 'The recommended capacity is not lower than the current provisioned capacity.' };
+        return {
+          unavailable: 'The recommended capacity is not lower than the current provisioned capacity.',
+        };
       }
       const capacity = await dynamoCapacityPrices(pricing, request.region, request.tableClass);
       if (!capacity.ok) return { unavailable: capacity.reason };
@@ -553,11 +557,16 @@ async function compute(request: SavingsRequest, pricing: PriceProvider): Promise
       const provisionedMonthly =
         (request.provisionedRcu * rcu + request.provisionedWcu * wcu) * HOURS_PER_MONTH;
       const onDemandMonthly =
-        request.monthlyReadUnits * rru.price.unitPriceUsd + request.monthlyWriteUnits * wru.price.unitPriceUsd;
+        request.monthlyReadUnits * rru.price.unitPriceUsd +
+        request.monthlyWriteUnits * wru.price.unitPriceUsd;
       const sources = [capacity.rcu.ref, capacity.wcu.ref, rru.ref, wru.ref];
       const comparison = `Provisioned capacity costs about ${fmt(roundMoney(provisionedMonthly))} USD/month; on-demand at the observed traffic would cost about ${fmt(roundMoney(onDemandMonthly))} USD/month.`;
       if (provisionedMonthly - onDemandMonthly <= 0) {
-        return { unavailable: 'On-demand is not cheaper at the observed traffic', assumptions: [comparison], sources };
+        return {
+          unavailable: 'On-demand is not cheaper at the observed traffic',
+          assumptions: [comparison],
+          sources,
+        };
       }
       return {
         monthly: provisionedMonthly - onDemandMonthly,
@@ -581,7 +590,9 @@ async function compute(request: SavingsRequest, pricing: PriceProvider): Promise
       });
       if (!storage.ok) return { unavailable: `Table storage: ${storage.reason}` };
       let monthly = request.storageGb * storage.price.unitPriceUsd;
-      const terms = [`${fmt(request.storageGb)} GB x ${fmt(storage.price.unitPriceUsd)} USD/GB-month (storage)`];
+      const terms = [
+        `${fmt(request.storageGb)} GB x ${fmt(storage.price.unitPriceUsd)} USD/GB-month (storage)`,
+      ];
       const sources: PricingSourceRef[] = [storage.ref];
       if (provisioned) {
         const capacity = await dynamoCapacityPrices(pricing, request.region, request.tableClass);

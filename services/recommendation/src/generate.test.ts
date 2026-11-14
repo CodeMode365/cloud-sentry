@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { recommendationIdFor } from '@cloudsentry/utilities';
 import {
   ARTIFACT_KEYS,
+  SUGGESTED_ACTION_TYPES,
   type ArtifactEnvelope,
   type DetectionResult,
   type RecommendationDraft,
 } from '@cloudsentry/shared-types';
 import { silentLogger } from '@cloudsentry/utilities';
 import { baseState, envelope, issue, MemoryArtifacts, NOW, PREFIX } from './__fixtures__/issues';
-import { generateRecommendations } from './generate';
+import { generateRecommendations, recommendationFor } from './generate';
 import { runGenerateRecommendationsStep } from './step-generate';
 
 describe('generateRecommendations', () => {
@@ -31,6 +32,46 @@ describe('generateRecommendations', () => {
       }),
     ]);
     expect(d?.title).toBe('Stop idle EC2 instance build-runner');
+  });
+});
+
+describe('recommendationFor (all action types)', () => {
+  it.each(SUGGESTED_ACTION_TYPES.map((t) => [t]))('%s has a title with the resource label', (type) => {
+    const d = recommendationFor(
+      issue({ resourceName: 'res-label', suggestedAction: { type, summary: 'Do it.', steps: [] } }),
+    );
+    expect(d.title).toContain('res-label');
+    expect(d.description).toContain('Do it.');
+    expect(d.description).toContain('read-only');
+  });
+
+  it('distinguishes backup plans from backup vaults', () => {
+    const action = { type: 'REDUCE_BACKUP_RETENTION' as const, summary: 's', steps: [] };
+    expect(
+      recommendationFor(
+        issue({ resourceName: 'daily', resourceType: 'BACKUP_PLAN', suggestedAction: action }),
+      ).title,
+    ).toBe('Reduce backup retention in backup plan daily');
+    expect(
+      recommendationFor(
+        issue({ resourceName: 'main', resourceType: 'BACKUP_VAULT', suggestedAction: action }),
+      ).title,
+    ).toBe('Reduce retention of old recovery points in backup vault main');
+  });
+
+  it('adds a caution to destructive actions on the new services', () => {
+    const d = recommendationFor(
+      issue({
+        resourceName: 'orders',
+        resourceType: 'DYNAMODB_TABLE',
+        description: 'Table orders is unused.',
+        suggestedAction: { type: 'DELETE_TABLE', summary: 'Delete it.', steps: [] },
+      }),
+    );
+    expect(d.title).toBe('Delete unused DynamoDB table orders');
+    expect(d.description).toMatch(
+      /^Table orders is unused\. Delete it\. Deletion permanently removes all items/,
+    );
   });
 });
 

@@ -10,7 +10,8 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "lint": "eslint src",
-    "test": "vitest run"
+    "test": "vitest run",
+    "verify:pricing": "tsx scripts/verify-pricing-live.ts"
   },
   "dependencies": {
     "@aws-sdk/client-pricing": "^3.1169.0",

@@ -61,7 +61,8 @@ const NOTE_BY_ACTION: Record<SuggestedActionType, string | null> = {
     'For Redis OSS or Valkey, create a final backup before deleting if the data may still be needed.',
   REVIEW_DISTRIBUTION: null,
   ENABLE_COMPRESSION: null,
-  DELETE_FILE_SYSTEM: 'Deletion permanently removes all files; back up the file system first if the data may be needed.',
+  DELETE_FILE_SYSTEM:
+    'Deletion permanently removes all files; back up the file system first if the data may be needed.',
   ENABLE_STORAGE_LIFECYCLE:
     'Infrequent Access storage charges for each read and write, so keep frequently accessed data in Standard.',
   RIGHTSIZE_TABLE_CAPACITY:
@@ -72,7 +73,8 @@ const NOTE_BY_ACTION: Record<SuggestedActionType, string | null> = {
   SCHEDULE_PAUSE_RESUME: 'Align the schedule with the hours when nobody queries the cluster.',
   REDUCE_BACKUP_RETENTION:
     'Confirm legal, regulatory and business retention requirements before shortening retention or deleting recovery points.',
-  CONSOLIDATE_BACKUP_PLANS: 'Keep at least one plan that meets the strictest retention requirement for each resource.',
+  CONSOLIDATE_BACKUP_PLANS:
+    'Keep at least one plan that meets the strictest retention requirement for each resource.',
 };
 
 const READ_ONLY_NOTICE =
@@ -86,7 +88,12 @@ export function recommendationFor(issue: DetectedIssue): RecommendationDraft {
     findingId: issue.findingId,
     issue,
     title: TITLE_BY_ACTION[issue.suggestedAction.type](label, issue),
-    description: [issue.description, issue.suggestedAction.summary, NOTE_BY_ACTION[issue.suggestedAction.type], READ_ONLY_NOTICE]
+    description: [
+      issue.description,
+      issue.suggestedAction.summary,
+      NOTE_BY_ACTION[issue.suggestedAction.type],
+      READ_ONLY_NOTICE,
+    ]
       .filter((part): part is string => Boolean(part))
       .join(' '),
     suggestedAction: issue.suggestedAction,

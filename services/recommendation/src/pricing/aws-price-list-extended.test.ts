@@ -147,7 +147,12 @@ describe('querySpec for extended services', () => {
     ],
     [
       'DynamoDB on-demand',
-      { kind: 'DYNAMODB_ON_DEMAND_REQUEST_UNIT', region: 'us-east-1', request: 'READ', tableClass: 'STANDARD' },
+      {
+        kind: 'DYNAMODB_ON_DEMAND_REQUEST_UNIT',
+        region: 'us-east-1',
+        request: 'READ',
+        tableClass: 'STANDARD',
+      },
       'AmazonDynamoDB',
       { regionCode: 'us-east-1', productFamily: 'Amazon DynamoDB PayPerRequest Throughput' },
       'first',
@@ -217,7 +222,11 @@ describe('selectTierDimensions', () => {
 
   it('the strategy changes the extracted price for a free-tier product', () => {
     const doc = JSON.parse(ddbStorage('S', 'TimedStorage-ByteHrs', '0.2500000000'));
-    const spec = querySpec({ kind: 'DYNAMODB_STORAGE_GB_MONTH', region: 'us-east-1', tableClass: 'STANDARD' });
+    const spec = querySpec({
+      kind: 'DYNAMODB_STORAGE_GB_MONTH',
+      region: 'us-east-1',
+      tableClass: 'STANDARD',
+    });
     expect(extractCandidates([doc], spec).map((c) => c.unitPriceUsd)).toEqual([0.25]);
     expect(extractCandidates([doc], { ...spec, tier: 'first' }).map((c) => c.unitPriceUsd)).toEqual([0]);
   });
@@ -282,8 +291,16 @@ describe('AwsPriceListProvider for extended services', () => {
 
     it('prices the control plane and the extended-support surcharge separately', async () => {
       serve(...eksDocs);
-      const standard = await price({ kind: 'EKS_CLUSTER_HOURLY', region: 'us-east-1', supportType: 'STANDARD' });
-      const extended = await price({ kind: 'EKS_CLUSTER_HOURLY', region: 'us-east-1', supportType: 'EXTENDED' });
+      const standard = await price({
+        kind: 'EKS_CLUSTER_HOURLY',
+        region: 'us-east-1',
+        supportType: 'STANDARD',
+      });
+      const extended = await price({
+        kind: 'EKS_CLUSTER_HOURLY',
+        region: 'us-east-1',
+        supportType: 'EXTENDED',
+      });
       expect(standard.price).toMatchObject({ sku: 'CP', unitPriceUsd: 0.1, unit: 'Hours' });
       expect(extended.price).toMatchObject({ sku: 'EX', unitPriceUsd: 0.5 });
       expect(serviceCodeOf()).toBe('AmazonEKS');
@@ -348,14 +365,20 @@ describe('AwsPriceListProvider for extended services', () => {
 
     it('matches region-prefixed usage types', async () => {
       serve(...efsDocs('USW2-'));
-      const result = await price({ kind: 'EFS_STORAGE_GB_MONTH', region: 'us-west-2', storageClass: 'General Purpose' });
+      const result = await price({
+        kind: 'EFS_STORAGE_GB_MONTH',
+        region: 'us-west-2',
+        storageClass: 'General Purpose',
+      });
       expect(result.price?.sku).toBe('STD');
     });
   });
 
   describe('DynamoDB', () => {
     it('provisioned capacity skips the $0 free-tier row (paid tier)', async () => {
-      serve(ddbCapacity('R', 'ReadCapacityUnit-Hrs', '0.0001300000', 'ReadCapacityUnit-Hrs', 'DDB-ReadUnits'));
+      serve(
+        ddbCapacity('R', 'ReadCapacityUnit-Hrs', '0.0001300000', 'ReadCapacityUnit-Hrs', 'DDB-ReadUnits'),
+      );
       const result = await price({
         kind: 'DYNAMODB_PROVISIONED_CAPACITY_HOURLY',
         region: 'us-east-1',
@@ -372,8 +395,20 @@ describe('AwsPriceListProvider for extended services', () => {
 
     it('provisioned write capacity (IA, region-prefixed) ignores replicated-write decoys', async () => {
       serve(
-        ddbCapacity('W', 'USW2-IA-WriteCapacityUnit-Hrs', '0.0008100000', 'WriteCapacityUnit-Hrs', 'DDB-WriteUnitsIA'),
-        ddbCapacity('RW', 'USW2-IA-ReplWriteCapacityUnit-Hrs', '0.0012200000', 'WriteCapacityUnit-Hrs', 'DDB-WriteUnitsIA'),
+        ddbCapacity(
+          'W',
+          'USW2-IA-WriteCapacityUnit-Hrs',
+          '0.0008100000',
+          'WriteCapacityUnit-Hrs',
+          'DDB-WriteUnitsIA',
+        ),
+        ddbCapacity(
+          'RW',
+          'USW2-IA-ReplWriteCapacityUnit-Hrs',
+          '0.0012200000',
+          'WriteCapacityUnit-Hrs',
+          'DDB-WriteUnitsIA',
+        ),
       );
       const result = await price({
         kind: 'DYNAMODB_PROVISIONED_CAPACITY_HOURLY',
@@ -423,7 +458,12 @@ describe('AwsPriceListProvider for extended services', () => {
         ['WRITE', 'STANDARD_INFREQUENT_ACCESS', 'IAWRU', 0.000000775],
       ])('%s %s', async (request, tableClass, sku, usd) => {
         serve(...docs);
-        const result = await price({ kind: 'DYNAMODB_ON_DEMAND_REQUEST_UNIT', region: 'us-east-1', request, tableClass });
+        const result = await price({
+          kind: 'DYNAMODB_ON_DEMAND_REQUEST_UNIT',
+          region: 'us-east-1',
+          request,
+          tableClass,
+        });
         expect(result.price).toMatchObject({ sku, unitPriceUsd: usd });
       });
 

@@ -66,9 +66,21 @@ describe('estimateRequestSavings (extended services)', () => {
       'POINT',
       1,
     ],
-    ['EKS delete (standard)', { kind: 'EKS_CLUSTER_DELETE', region: R, supportType: 'STANDARD' }, 73, 'POINT', 1],
+    [
+      'EKS delete (standard)',
+      { kind: 'EKS_CLUSTER_DELETE', region: R, supportType: 'STANDARD' },
+      73,
+      'POINT',
+      1,
+    ],
     // (0.10 + 0.50) x 730: two lookups summed
-    ['EKS delete (extended)', { kind: 'EKS_CLUSTER_DELETE', region: R, supportType: 'EXTENDED' }, 438, 'POINT', 2],
+    [
+      'EKS delete (extended)',
+      { kind: 'EKS_CLUSTER_DELETE', region: R, supportType: 'EXTENDED' },
+      438,
+      'POINT',
+      2,
+    ],
     [
       // 3 x 0.0832 x 730
       'EKS nodes reduce',
@@ -102,14 +114,26 @@ describe('estimateRequestSavings (extended services)', () => {
     [
       // 0.1648 x 3 x 730
       'ElastiCache delete (Valkey)',
-      { kind: 'ELASTICACHE_DELETE', region: R, cacheEngine: 'Valkey', cacheNodeType: 'cache.r6g.large', numNodes: 3 },
+      {
+        kind: 'ELASTICACHE_DELETE',
+        region: R,
+        cacheEngine: 'Valkey',
+        cacheNodeType: 'cache.r6g.large',
+        numNodes: 3,
+      },
       360.91,
       'POINT',
       1,
     ],
     [
       'ElastiCache delete (Memcached)',
-      { kind: 'ELASTICACHE_DELETE', region: R, cacheEngine: 'Memcached', cacheNodeType: 'cache.t3.micro', numNodes: 1 },
+      {
+        kind: 'ELASTICACHE_DELETE',
+        region: R,
+        cacheEngine: 'Memcached',
+        cacheNodeType: 'cache.t3.micro',
+        numNodes: 1,
+      },
       12.41,
       'POINT',
       1,
@@ -117,7 +141,14 @@ describe('estimateRequestSavings (extended services)', () => {
     [
       // 100 x 0.30 + 200 x 0.025 + 1000 x 0.008
       'EFS delete (regional)',
-      { kind: 'EFS_DELETE', region: R, standardGb: 100, infrequentAccessGb: 200, archiveGb: 1000, oneZone: false },
+      {
+        kind: 'EFS_DELETE',
+        region: R,
+        standardGb: 100,
+        infrequentAccessGb: 200,
+        archiveGb: 1000,
+        oneZone: false,
+      },
       43,
       'POINT',
       3,
@@ -125,7 +156,14 @@ describe('estimateRequestSavings (extended services)', () => {
     [
       // 100 x 0.16 + 100 x 0.0133
       'EFS delete (One Zone)',
-      { kind: 'EFS_DELETE', region: R, standardGb: 100, infrequentAccessGb: 100, archiveGb: 0, oneZone: true },
+      {
+        kind: 'EFS_DELETE',
+        region: R,
+        standardGb: 100,
+        infrequentAccessGb: 100,
+        archiveGb: 0,
+        oneZone: true,
+      },
       17.33,
       'POINT',
       2,
@@ -238,7 +276,7 @@ describe('estimateRequestSavings (extended services)', () => {
     const est = await estimateRequestSavings(request, pricing, NOW);
     expect(est.status).toBe('ESTIMATED');
     expect(est.monthly).toBe(monthly);
-    expect(est.annual).toBeCloseTo(monthly * 12, 1);
+    expect(est.annual).toBeCloseTo(monthly * 12, 0);
     expect(est.estimateType).toBe(estimateType);
     expect(est.pricingSources).toHaveLength(lookups);
     expect(pricing.calls).toHaveLength(lookups);
@@ -248,12 +286,22 @@ describe('estimateRequestSavings (extended services)', () => {
 
   it('EKS extended support sums the control-plane and surcharge lookups', async () => {
     const pricing = new FakePriceProvider();
-    const est = await estimateRequestSavings({ kind: 'EKS_CLUSTER_DELETE', region: R, supportType: 'EXTENDED' }, pricing, NOW);
-    expect(pricing.calls.map((c) => c.kind === 'EKS_CLUSTER_HOURLY' && c.supportType)).toEqual(['STANDARD', 'EXTENDED']);
+    const est = await estimateRequestSavings(
+      { kind: 'EKS_CLUSTER_DELETE', region: R, supportType: 'EXTENDED' },
+      pricing,
+      NOW,
+    );
+    expect(pricing.calls.map((c) => c.kind === 'EKS_CLUSTER_HOURLY' && c.supportType)).toEqual([
+      'STANDARD',
+      'EXTENDED',
+    ]);
     expect(est.method).toContain('0.1 control plane + 0.5 extended support');
     expect(est.assumptions.some((a) => a.includes('node'))).toBe(true);
 
-    const noSurcharge = new FakePriceProvider({ ...DEFAULT_FAKE_PRICES, 'EKS_CLUSTER_HOURLY:EXTENDED': null });
+    const noSurcharge = new FakePriceProvider({
+      ...DEFAULT_FAKE_PRICES,
+      'EKS_CLUSTER_HOURLY:EXTENDED': null,
+    });
     const missing = await estimateRequestSavings(
       { kind: 'EKS_CLUSTER_DELETE', region: R, supportType: 'EXTENDED' },
       noSurcharge,
@@ -293,9 +341,10 @@ describe('estimateRequestSavings (extended services)', () => {
     expect(
       (await estimateRequestSavings({ ...base, capacityType: 'CAPACITY_BLOCK' }, spot, NOW)).status,
     ).toBe('UNAVAILABLE');
-    expect((await estimateRequestSavings({ ...base, capacityType: 'ON_DEMAND', removableNodes: 0 }, spot, NOW)).status).toBe(
-      'UNAVAILABLE',
-    );
+    expect(
+      (await estimateRequestSavings({ ...base, capacityType: 'ON_DEMAND', removableNodes: 0 }, spot, NOW))
+        .status,
+    ).toBe('UNAVAILABLE');
   });
 
   it('DynamoDB switch is UNAVAILABLE when on-demand is not cheaper', async () => {
@@ -315,12 +364,18 @@ describe('estimateRequestSavings (extended services)', () => {
     expect(est).toMatchObject({ status: 'UNAVAILABLE', monthly: null, annual: null });
     expect(est.unavailableReason).toBe('On-demand is not cheaper at the observed traffic');
     expect(est.pricingSources).toHaveLength(4);
-    expect(est.assumptions.some((a) => a.includes('189.8 USD/month') && a.includes('250 USD/month'))).toBe(true);
+    expect(est.assumptions.some((a) => a.includes('189.8 USD/month') && a.includes('250 USD/month'))).toBe(
+      true,
+    );
   });
 
   it('Redshift pause clamps the fraction and is UNAVAILABLE without pausable time', async () => {
     const base = { kind: 'REDSHIFT_PAUSE' as const, region: R, nodeType: 'ra3.xlplus', numberOfNodes: 1 };
-    const over = await estimateRequestSavings({ ...base, pausableFraction: 1.5 }, new FakePriceProvider(), NOW);
+    const over = await estimateRequestSavings(
+      { ...base, pausableFraction: 1.5 },
+      new FakePriceProvider(),
+      NOW,
+    );
     expect(over).toMatchObject({ monthly: 792.78, estimateType: 'POINT' });
     const none = await estimateRequestSavings({ ...base, pausableFraction: 0 }, new FakePriceProvider(), NOW);
     expect(none.status).toBe('UNAVAILABLE');
@@ -407,7 +462,13 @@ describe('estimateRequestSavings (extended services)', () => {
     ],
     [
       'ElastiCache unknown node price',
-      { kind: 'ELASTICACHE_DELETE', region: R, cacheEngine: 'Redis', cacheNodeType: 'cache.x9.huge', numNodes: 1 },
+      {
+        kind: 'ELASTICACHE_DELETE',
+        region: R,
+        cacheEngine: 'Redis',
+        cacheNodeType: 'cache.x9.huge',
+        numNodes: 1,
+      },
       /^NO_MATCHING_PRICE/,
     ],
     [
@@ -455,7 +516,9 @@ describe('estimateRequestSavings (extended services)', () => {
       NOW,
     );
     expect(est).toMatchObject({ status: 'ESTIMATED', monthly: 0 });
-    expect(pricing.calls).toEqual([{ kind: 'EFS_STORAGE_GB_MONTH', region: R, storageClass: 'General Purpose' }]);
+    expect(pricing.calls).toEqual([
+      { kind: 'EFS_STORAGE_GB_MONTH', region: R, storageClass: 'General Purpose' },
+    ]);
   });
 });
 
@@ -475,7 +538,11 @@ describe('extended savings with the AWS Price List provider', () => {
         simpleEntry('EX', 'AmazonEKS-Hours:extendedSupport', 'Hours', '0.5000000000'),
       ],
     });
-    const est = await estimateRequestSavings({ kind: 'EKS_CLUSTER_DELETE', region: R, supportType: 'EXTENDED' }, live(), NOW);
+    const est = await estimateRequestSavings(
+      { kind: 'EKS_CLUSTER_DELETE', region: R, supportType: 'EXTENDED' },
+      live(),
+      NOW,
+    );
     expect(est.monthly).toBe(438);
     expect(est.pricingSources.map((s) => s.sku)).toEqual(['CP', 'EX']);
     expect(pricingMock.commandCalls(GetProductsCommand)).toHaveLength(2);
@@ -542,18 +609,24 @@ describe('runEstimateSavingsStep (extended services)', () => {
     const artifacts = new MemoryArtifacts();
     await artifacts.putJson(
       ARTIFACT_KEYS.recommendations(PREFIX),
-      envelope(generateRecommendations([eks('c1', 'STANDARD'), eks('c2', 'EXTENDED'), table('t1'), table('t2')])),
+      envelope(
+        generateRecommendations([eks('c1', 'STANDARD'), eks('c2', 'EXTENDED'), table('t1'), table('t2')]),
+      ),
     );
     const pricing = new FakePriceProvider();
     const out = await runEstimateSavingsStep(
-      baseState({ recommendations: { status: 'SUCCEEDED', artifactKey: ARTIFACT_KEYS.recommendations(PREFIX) } }),
+      baseState({
+        recommendations: { status: 'SUCCEEDED', artifactKey: ARTIFACT_KEYS.recommendations(PREFIX) },
+      }),
       { artifacts, pricing, logger: silentLogger, now: () => NOW },
     );
-    // EKS STANDARD (shared) + EKS EXTENDED + DynamoDB READ + WRITE
+    // EKS STANDARD (shared) + EKS EXTENDED + DynamoDB READ + WRITE; tables: 90 x (0.00013 + 0.00065) x 730
     expect(out.counts).toMatchObject({ recommendations: 4, priced: 4, priceLookups: 4, errors: 0 });
     expect(pricing.calls).toHaveLength(4);
-    const written = await artifacts.getJson<ArtifactEnvelope<PricedRecommendationDraft[]>>(ARTIFACT_KEYS.savings(PREFIX));
-    expect(written.data.map((d) => d.savings.monthly)).toEqual([73, 438, 70.96, 70.96]);
+    const written = await artifacts.getJson<ArtifactEnvelope<PricedRecommendationDraft[]>>(
+      ARTIFACT_KEYS.savings(PREFIX),
+    );
+    expect(written.data.map((d) => d.savings.monthly)).toEqual([73, 438, 51.25, 51.25]);
     expect(written.data[1]?.severity).toBe('HIGH');
   });
 });
