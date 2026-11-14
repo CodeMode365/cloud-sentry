@@ -76,6 +76,7 @@ function util(
             datapoints: expected,
             expectedDatapoints: expected,
             coverage: 1,
+            zeroFraction: avg === 0 ? 1 : 0,
           },
         },
       ]),

@@ -40,21 +40,27 @@ export const cw = mockClient(CloudWatchClient);
 export const ce = mockClient(CostExplorerClient);
 export const pricing = mockClient(PricingClient);
 /** Extended-service clients: empty accounts by default so tests stay hermetic (no real AWS calls). */
-export const extendedClients = [
-  LambdaClient,
-  EKSClient,
-  ElastiCacheClient,
-  CloudFrontClient,
-  EFSClient,
-  RedshiftClient,
-  BackupClient,
-  ApplicationAutoScalingClient,
-  ResourceGroupsTaggingAPIClient,
-].map((c) => mockClient(c));
+/** Minimal view of an aws-sdk-client-mock stub, so stubs for different client classes fit in one array. */
+interface SimpleStub {
+  reset(): void;
+  onAnyCommand(): { resolves(value: object): unknown };
+}
+const stub = (m: unknown) => m as SimpleStub;
+export const extendedClients: SimpleStub[] = [
+  stub(mockClient(LambdaClient)),
+  stub(mockClient(EKSClient)),
+  stub(mockClient(ElastiCacheClient)),
+  stub(mockClient(CloudFrontClient)),
+  stub(mockClient(EFSClient)),
+  stub(mockClient(RedshiftClient)),
+  stub(mockClient(BackupClient)),
+  stub(mockClient(ApplicationAutoScalingClient)),
+  stub(mockClient(ResourceGroupsTaggingAPIClient)),
+];
 // DynamoDB: the client class is shared with DynamoDB Local (repositories), so only a dedicated customer-side
 // instance is mocked; tests route CustomerAwsClients.dynamodb() to it.
 export const customerDynamoDb = new DynamoDBClient({ region: 'us-east-1' });
-export const customerDynamoDbMock = mockClient(customerDynamoDb);
+export const customerDynamoDbMock = stub(mockClient(customerDynamoDb));
 
 const daysAgo = (d: number) => new Date(Date.now() - d * 86_400_000);
 

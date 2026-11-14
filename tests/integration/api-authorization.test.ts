@@ -214,14 +214,30 @@ describe.skipIf(!available)('API authentication, authorization and validation', 
   });
 
   it('renames an account (and rejects stale or empty updates)', async () => {
-    const renamed = await call('PATCH', '/api/v1/accounts/123456789012', { token: tokenA, body: { alias: 'Production (main)' } });
+    const renamed = await call('PATCH', '/api/v1/accounts/123456789012', {
+      token: tokenA,
+      body: { alias: 'Production (main)' },
+    });
     expect(renamed.statusCode).toBe(200);
     expect(renamed.body.data.alias).toBe('Production (main)');
-    expect((await call('GET', '/api/v1/accounts/123456789012', { token: tokenA })).body.data.alias).toBe('Production (main)');
-    expect((await call('PATCH', '/api/v1/accounts/123456789012', { token: tokenA, body: { alias: '' } })).statusCode).toBe(400);
-    expect((await call('PATCH', '/api/v1/accounts/123456789012', { token: tokenA, body: {} })).statusCode).toBe(400);
-    expect((await call('PATCH', '/api/v1/accounts/123456789012', { token: viewerToken, body: { alias: 'x' } })).statusCode).toBe(403);
-    expect((await call('PATCH', '/api/v1/accounts/123456789012', { token: tokenB, body: { alias: 'x' } })).statusCode).toBe(404);
+    expect((await call('GET', '/api/v1/accounts/123456789012', { token: tokenA })).body.data.alias).toBe(
+      'Production (main)',
+    );
+    expect(
+      (await call('PATCH', '/api/v1/accounts/123456789012', { token: tokenA, body: { alias: '' } }))
+        .statusCode,
+    ).toBe(400);
+    expect(
+      (await call('PATCH', '/api/v1/accounts/123456789012', { token: tokenA, body: {} })).statusCode,
+    ).toBe(400);
+    expect(
+      (await call('PATCH', '/api/v1/accounts/123456789012', { token: viewerToken, body: { alias: 'x' } }))
+        .statusCode,
+    ).toBe(403);
+    expect(
+      (await call('PATCH', '/api/v1/accounts/123456789012', { token: tokenB, body: { alias: 'x' } }))
+        .statusCode,
+    ).toBe(404);
   });
 
   it('validates input with consistent error envelopes', async () => {
