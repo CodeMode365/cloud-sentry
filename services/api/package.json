@@ -1,0 +1,35 @@
+{
+  "name": "@cloudsentry/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./local/in-process-runner": "./src/local/in-process-runner.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "vitest run --passWithNoTests",
+    "dev": "tsx watch --env-file-if-exists=.env.local src/local/local-server.ts",
+    "seed:synthetic": "tsx --env-file-if-exists=.env.local src/local/seed-synthetic.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.1169.0",
+    "@cloudsentry/analyzer": "workspace:*",
+    "@cloudsentry/aws-clients": "workspace:*",
+    "@cloudsentry/core": "workspace:*",
+    "@cloudsentry/database": "workspace:*",
+    "@cloudsentry/recommendation": "workspace:*",
+    "@cloudsentry/reporting": "workspace:*",
+    "@cloudsentry/scanner": "workspace:*",
+    "@cloudsentry/shared-types": "workspace:*",
+    "@cloudsentry/utilities": "workspace:*",
+    "@cloudsentry/validators": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.164",
+    "aws-sdk-client-mock": "^4.1.0"
+  }
+}
