@@ -1,0 +1,43 @@
+{
+  "name": "cloudsentry",
+  "private": true,
+  "description": "CloudSentry - AWS cloud intelligence and cost optimization platform",
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:integration": "pnpm --filter @cloudsentry/tests test",
+    "dev": "turbo run dev --parallel",
+    "dev:api": "pnpm --filter @cloudsentry/api dev",
+    "dev:web": "pnpm --filter @cloudsentry/web dev",
+    "dev:db": "docker compose -f docker-compose.dev.yml up -d",
+    "seed:synthetic": "pnpm --filter @cloudsentry/api seed:synthetic",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "audit:deps": "pnpm audit --prod --audit-level high",
+    "cdk": "pnpm --filter @cloudsentry/infrastructure cdk"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@types/node": "^22.19.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "globals": "^16.5.0",
+    "prettier": "^3.10.1",
+    "tsx": "^4.23.15",
+    "turbo": "^2.11.11",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.72.2",
+    "vitest": "^3.2.7"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": "^8.5.33"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+# Local development dependencies. DynamoDB Local only - no AWS resources are emulated
+# beyond the database. Artifacts are written to ./.local/artifacts by the local API.
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:2.6.1
+    command: ['-jar', 'DynamoDBLocal.jar', '-sharedDb', '-inMemory']
+    ports:
+      - '8000:8000'
