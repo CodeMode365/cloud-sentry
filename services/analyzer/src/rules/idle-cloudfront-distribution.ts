@@ -66,14 +66,19 @@ export const idleCloudFrontDistributionRule = defineRule({
         observationEvidence(obs.observableDays, t.minObservationDays),
         coverageEvidence(coverage, t.minCoverage),
         { key: 'distribution.enabled', label: 'Enabled', value: a.enabled },
-        { key: 'distribution.aliases', label: 'Alternate domain names', value: a.aliases.length > 0 ? a.aliases.join(', ') : 'none' },
+        {
+          key: 'distribution.aliases',
+          label: 'Alternate domain names',
+          value: a.aliases.length > 0 ? a.aliases.join(', ') : 'none',
+        },
         { key: 'distribution.priceClass', label: 'Price class', value: a.priceClass },
         { key: 'distribution.origins', label: 'Origins', value: a.originCount },
         { key: 'distribution.webAcl', label: 'AWS WAF web ACL', value: a.webAclId ?? 'none' },
         {
           key: 'pricing.note',
           label: 'Savings',
-          value: 'Not estimated: CloudFront has no fixed monthly charge for an enabled distribution (an attached AWS WAF web ACL is billed separately).',
+          value:
+            'Not estimated: CloudFront has no fixed monthly charge for an enabled distribution (an attached AWS WAF web ACL is billed separately).',
         },
       ],
       suggestedAction: {

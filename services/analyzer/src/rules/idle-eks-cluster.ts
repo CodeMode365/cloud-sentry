@@ -1,7 +1,7 @@
 import type { EvidenceItem } from '@cloudsentry/shared-types';
 import { round } from '@cloudsentry/utilities';
 import { eksClusterEvidence, eksStateGate, totalDesiredNodes } from './eks-shared';
-import { ageInDays, readMetric } from './metric-helpers';
+import { ageEvidence, readMetric, resourceAge } from './metric-helpers';
 import { defineRule, NOT_DETECTED, notEvaluated } from './types';
 
 const DEFAULTS = { minAgeDays: 7 };
@@ -30,9 +30,9 @@ export const idleEksClusterRule = defineRule({
     const desiredNodes = totalDesiredNodes(a.nodegroups);
     if (desiredNodes > 0 || a.fargateProfileCount > 0 || a.autoModeEnabled) return NOT_DETECTED;
 
-    const age = ageInDays(resource.createdAt, now);
+    const age = resourceAge(resource, now);
     if (age === null) return notEvaluated('CREATION_TIME_UNKNOWN');
-    if (age < t.minAgeDays) return NOT_DETECTED;
+    if (age.days < t.minAgeDays) return NOT_DETECTED;
 
     // Nodes outside managed node groups (self-managed, Karpenter) are only visible through Container Insights.
     const nodeCount = readMetric(resource, 'cluster_node_count', 'Average', 0);
@@ -40,15 +40,21 @@ export const idleEksClusterRule = defineRule({
 
     const evidence: EvidenceItem[] = [
       { key: 'cluster.status', label: 'Cluster status', value: resource.state },
-      { key: 'nodes.desiredTotal', label: 'Desired nodes across managed node groups', value: 0, threshold: '= 0' },
+      {
+        key: 'nodes.desiredTotal',
+        label: 'Desired nodes across managed node groups',
+        value: 0,
+        threshold: '= 0',
+      },
       ...eksClusterEvidence(resource),
-      { key: 'cluster.ageDays', label: 'Age', value: round(age, 1), unit: 'days', threshold: `>= ${t.minAgeDays}` },
+      ageEvidence('cluster.ageDays', age, t.minAgeDays),
       nodeCount.ok
         ? { key: 'nodes.containerInsightsMax', label: 'Maximum node count (Container Insights)', value: 0 }
         : {
             key: 'nodes.selfManaged',
             label: 'Self-managed nodes',
-            value: 'Unknown: Container Insights node count is unavailable, so self-managed or Karpenter nodes cannot be ruled out',
+            value:
+              'Unknown: Container Insights node count is unavailable, so self-managed or Karpenter nodes cannot be ruled out',
           },
     ];
     if (a.supportType === 'EXTENDED') {
@@ -65,7 +71,7 @@ export const idleEksClusterRule = defineRule({
       outcome: 'DETECTED',
       title: `Idle EKS cluster ${label}`,
       description:
-        `Cluster ${a.clusterName} has been ACTIVE for ${round(age, 0)} days with no managed node group capacity, ` +
+        `Cluster ${a.clusterName} has been ACTIVE for at least ${round(age.days, 0)} days with no managed node group capacity, ` +
         'no Fargate profiles and Auto Mode disabled, so it cannot run workloads on managed compute. ' +
         'The EKS control plane is billed per hour regardless.',
       confidence: 'MEDIUM',
@@ -73,7 +79,8 @@ export const idleEksClusterRule = defineRule({
       evidence,
       suggestedAction: {
         type: 'DELETE_CLUSTER',
-        summary: 'Confirm the cluster is no longer needed, then delete it after exporting any configuration you want to keep.',
+        summary:
+          'Confirm the cluster is no longer needed, then delete it after exporting any configuration you want to keep.',
         steps: [
           'Check for self-managed nodes (EC2 Auto Scaling groups joined to the cluster) or Karpenter-provisioned nodes, which this check cannot always see.',
           'Confirm with the owner that no environment, CI/CD pipeline or GitOps controller depends on the cluster endpoint.',

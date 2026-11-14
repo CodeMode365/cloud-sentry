@@ -160,5 +160,68 @@ export function runDetection(
       }
     }
   }
-  return { issues, evaluations, rulesExecuted };
+  return applySupersession({ issues, evaluations, rulesExecuted });
+}
+
+/**
+ * Overlapping rules on one resource: a stronger "idle/unused" finding replaces the weaker "underutilized"
+ * one so savings are never counted twice (e.g. delete an idle cache vs. rightsize it). The weaker rule's
+ * evaluation becomes NOT_DETECTED (reason SUPERSEDED_BY:<rule>), which also resolves a previously open
+ * weaker finding. Keys: superseded rule -> rules that supersede it.
+ */
+export const SUPERSEDED_BY: Readonly<Record<string, readonly string[]>> = {
+  'underutilized-elasticache': ['idle-elasticache'],
+  'efs-missing-lifecycle': ['unused-efs'],
+  'dynamodb-overprovisioned-capacity': ['unused-dynamodb-table'],
+  'dynamodb-capacity-mode': ['unused-dynamodb-table'],
+  'underutilized-eks-nodes': ['idle-eks-cluster'],
+  'eks-oversized-requests': ['idle-eks-cluster'],
+  'redshift-pause-schedule': ['idle-redshift-cluster'],
+};
+
+export function applySupersession(result: DetectionResult): DetectionResult {
+  const detected = new Map<string, DetectedIssue>();
+  for (const issue of result.issues) detected.set(`${issue.ruleId}|${issue.resourceKey}`, issue);
+  const supersededBy = new Map<string, string>();
+  for (const issue of result.issues) {
+    const stronger = (SUPERSEDED_BY[issue.ruleId] ?? []).find((r) =>
+      detected.has(`${r}|${issue.resourceKey}`),
+    );
+    if (stronger) supersededBy.set(`${issue.ruleId}|${issue.resourceKey}`, stronger);
+  }
+  const issues = result.issues
+    .filter((i) => !supersededBy.has(`${i.ruleId}|${i.resourceKey}`))
+    .map((issue) => priceArm64AfterRightsizing(issue, detected));
+  const evaluations = result.evaluations.map((e) => {
+    const stronger = supersededBy.get(`${e.ruleId}|${e.resourceKey}`);
+    return stronger ? { ...e, outcome: 'NOT_DETECTED' as const, reason: `SUPERSEDED_BY:${stronger}` } : e;
+  });
+  return { ...result, issues, evaluations };
+}
+
+/**
+ * arm64 migration and memory rightsizing both reduce the same GB-second cost. When both are detected, the
+ * arm64 saving is priced at the rightsized memory so the two estimates add up instead of overlapping.
+ */
+function priceArm64AfterRightsizing(
+  issue: DetectedIssue,
+  detected: Map<string, DetectedIssue>,
+): DetectedIssue {
+  if (issue.ruleId !== 'lambda-arm64-migration' || issue.savingsRequest?.kind !== 'LAMBDA_ARM64_MIGRATION')
+    return issue;
+  const memory = detected.get(`lambda-overprovisioned-memory|${issue.resourceKey}`)?.savingsRequest;
+  if (memory?.kind !== 'LAMBDA_MEMORY_RIGHTSIZE') return issue;
+  return {
+    ...issue,
+    savingsRequest: { ...issue.savingsRequest, memoryMb: memory.recommendedMemoryMb },
+    evidence: [
+      ...issue.evidence,
+      {
+        key: 'pricing.memoryAfterRightsizing',
+        label: 'Priced at the rightsized memory (see memory recommendation)',
+        value: memory.recommendedMemoryMb,
+        unit: 'MB',
+      },
+    ],
+  };
 }

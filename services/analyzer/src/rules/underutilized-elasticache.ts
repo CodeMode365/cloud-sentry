@@ -150,7 +150,9 @@ export const underutilizedElastiCacheRule = defineRule({
         `(peak ${pct(cpuMaximum)}%)` +
         (memoryMax === null ? '' : ` with at most ${pct(memoryMax)}% memory used`) +
         ` over ${round(obs.observableDays, 0)} days.` +
-        (target ? ` A ${target} node may be sufficient.` : ' No smaller node type in this family was identified.'),
+        (target
+          ? ` A ${target} node may be sufficient.`
+          : ' No smaller node type in this family was identified.'),
       confidence,
       riskLevel: 'MEDIUM',
       evidence,

@@ -7,7 +7,14 @@ import {
   monthlyDurationSeconds,
   roundUpTo,
 } from './lambda-shared';
-import { coverageEvidence, isMissingData, observationEvidence, pct, readMetric, requireObservation } from './metric-helpers';
+import {
+  coverageEvidence,
+  isMissingData,
+  observationEvidence,
+  pct,
+  readMetric,
+  requireObservation,
+} from './metric-helpers';
 import { defineRule, NOT_DETECTED, notEvaluated } from './types';
 
 /** Lambda's minimum memory size (MB). */

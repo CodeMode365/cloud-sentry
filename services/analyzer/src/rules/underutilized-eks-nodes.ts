@@ -1,6 +1,12 @@
 import type { ConfidenceLevel, EvidenceItem, SavingsRequest } from '@cloudsentry/shared-types';
 import { round } from '@cloudsentry/utilities';
-import { containerInsightsReason, eksClusterEvidence, eksStateGate, largestNodegroup, totalDesiredNodes } from './eks-shared';
+import {
+  containerInsightsReason,
+  eksClusterEvidence,
+  eksStateGate,
+  largestNodegroup,
+  totalDesiredNodes,
+} from './eks-shared';
 import {
   coverageEvidence,
   minCoverageOf,
@@ -67,7 +73,8 @@ export const underutilizedEksNodesRule = defineRule({
     if (cpuP95 === null || memP95 === null) return notEvaluated('METRIC_STATISTICS_INCOMPLETE');
     if (cpuP95 >= t.maxCpuPercent || memP95 >= t.maxMemoryPercent) return NOT_DETECTED;
 
-    const target = t.targetUtilizationPercent > 0 ? t.targetUtilizationPercent : DEFAULTS.targetUtilizationPercent;
+    const target =
+      t.targetUtilizationPercent > 0 ? t.targetUtilizationPercent : DEFAULTS.targetUtilizationPercent;
     const required = Math.max(1, Math.ceil(round((nodes * Math.max(cpuP95, memP95)) / target, 6)));
     const removable = nodes - required;
     if (removable <= 0) return NOT_DETECTED;
@@ -89,7 +96,12 @@ export const underutilizedEksNodesRule = defineRule({
         unit: '%',
         threshold: `< ${t.maxMemoryPercent}`,
       },
-      { key: 'nodes.desiredTotal', label: 'Desired nodes (managed node groups)', value: nodes, threshold: `>= ${t.minNodes}` },
+      {
+        key: 'nodes.desiredTotal',
+        label: 'Desired nodes (managed node groups)',
+        value: nodes,
+        threshold: `>= ${t.minNodes}`,
+      },
       {
         key: 'nodes.required',
         label: 'Nodes needed at target utilization',
@@ -142,7 +154,11 @@ export const underutilizedEksNodesRule = defineRule({
       evidence.push(
         { key: 'pricing.nodegroup', label: 'Node group used for pricing', value: pricingGroup.name },
         { key: 'pricing.instanceType', label: 'Node instance type', value: instanceTypes[0] ?? null },
-        { key: 'pricing.capacityType', label: 'Capacity type', value: pricingGroup.capacityType ?? 'unknown' },
+        {
+          key: 'pricing.capacityType',
+          label: 'Capacity type',
+          value: pricingGroup.capacityType ?? 'unknown',
+        },
       );
       savingsRequest = {
         kind: 'EKS_NODES_REDUCE',

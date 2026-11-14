@@ -1,7 +1,13 @@
 import type { EvidenceItem } from '@cloudsentry/shared-types';
 import { round } from '@cloudsentry/utilities';
 import { LAMBDA_COMMON_DEFAULTS, LAMBDA_COVERAGE_DESCRIPTION, lambdaFunctionEvidence } from './lambda-shared';
-import { coverageEvidence, observationEvidence, readMetric, readMetrics, requireObservation } from './metric-helpers';
+import {
+  coverageEvidence,
+  observationEvidence,
+  readMetric,
+  readMetrics,
+  requireObservation,
+} from './metric-helpers';
 import { defineRule, NOT_DETECTED, notEvaluated } from './types';
 
 const DEFAULTS = { timeoutRatio: 0.8, ...LAMBDA_COMMON_DEFAULTS };
@@ -56,9 +62,20 @@ export const lambdaNearTimeoutRule = defineRule({
         unit: 'ms',
         threshold: `>= ${round(thresholdMs, 0)} (${t.timeoutRatio} x timeout)`,
       },
-      { key: 'duration.timeoutRatio', label: 'p95 maximum duration / timeout', value: round(p95 / timeoutMs, 3) },
+      {
+        key: 'duration.timeoutRatio',
+        label: 'p95 maximum duration / timeout',
+        value: round(p95 / timeoutMs, 3),
+      },
       ...(durationMax.stats.maximum !== null
-        ? [{ key: 'duration.maxMs', label: 'Longest hourly maximum duration', value: round(durationMax.stats.maximum, 0), unit: 'ms' }]
+        ? [
+            {
+              key: 'duration.maxMs',
+              label: 'Longest hourly maximum duration',
+              value: round(durationMax.stats.maximum, 0),
+              unit: 'ms',
+            },
+          ]
         : []),
       {
         key: 'invocations.total',

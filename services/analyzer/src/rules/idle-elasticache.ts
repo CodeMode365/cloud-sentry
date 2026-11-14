@@ -66,7 +66,10 @@ export const idleElastiCacheRule = defineRule({
       if (read.ok && read.stats.sum !== null) {
         evidence.push({
           key: `network.${metric === 'NetworkBytesIn' ? 'in' : 'out'}Gb`,
-          label: metric === 'NetworkBytesIn' ? 'Network in (observation period)' : 'Network out (observation period)',
+          label:
+            metric === 'NetworkBytesIn'
+              ? 'Network in (observation period)'
+              : 'Network out (observation period)',
           value: round(read.stats.sum / BYTES_PER_GB, 3),
           unit: 'GB',
         });

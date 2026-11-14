@@ -1,7 +1,14 @@
 import type { EvidenceItem } from '@cloudsentry/shared-types';
 import { round } from '@cloudsentry/utilities';
 import { LAMBDA_COMMON_DEFAULTS, LAMBDA_COVERAGE_DESCRIPTION, lambdaFunctionEvidence } from './lambda-shared';
-import { observationEvidence, pct, readMetricByKey, requireObservation } from './metric-helpers';
+import {
+  isMissingData,
+  observationEvidence,
+  pct,
+  readMetric,
+  readMetricByKey,
+  requireObservation,
+} from './metric-helpers';
 import { defineRule, NOT_DETECTED, notEvaluated } from './types';
 
 const DEFAULTS = { maxUtilizationPercent: 20, headroomFactor: 1.5, ...LAMBDA_COMMON_DEFAULTS };
@@ -17,6 +24,8 @@ interface FlaggedConfig {
   allocated: number;
   maxUtilizationPercent: number;
   recommended: number;
+  /** True when utilization was inferred as 0 from zero function invocations (metric not emitted). */
+  inferredFromInvocations: boolean;
 }
 
 export const lambdaIdleProvisionedConcurrencyRule = defineRule({
@@ -33,7 +42,7 @@ export const lambdaIdleProvisionedConcurrencyRule = defineRule({
   defaultThresholds: DEFAULTS,
   thresholdDescriptions: {
     maxUtilizationPercent:
-      'Maximum ProvisionedConcurrencyUtilization of a configuration must be below this value (percent; CloudWatch reports a 0-1 ratio, converted to percent).',
+      "Maximum ProvisionedConcurrencyUtilization of a configuration must be below this value (percent; the scanner stores CloudWatch's 0-1 ratio as 0-100).",
     headroomFactor:
       'Recommended allocation = ceil(allocated x peak utilization x this factor) (multiplier, minimum 0).',
     minObservationDays: 'Minimum days of history required to evaluate.',
@@ -48,27 +57,43 @@ export const lambdaIdleProvisionedConcurrencyRule = defineRule({
     const obs = requireObservation(resource, t.minObservationDays);
     if (!obs.ok) return notEvaluated(obs.reason);
 
+    // Lambda stops emitting ProvisionedConcurrencyUtilization while a function receives no invocations. Only
+    // when Invocations is AVAILABLE and sums to 0 may a missing utilization series be read as 0% utilization.
+    const invocations = readMetric(resource, 'Invocations', 'Sum', t.minCoverage);
+    const noInvocations = invocations.ok && invocations.stats.sum === 0;
+
     const flagged: FlaggedConfig[] = [];
     const unevaluated: { qualifier: string; reason: string }[] = [];
     for (const config of configs) {
       const read = readMetricByKey(resource, provisionedConcurrencyKey(config.qualifier), t.minCoverage);
-      if (!read.ok) {
+      let maxUtilizationPercent: number;
+      let inferredFromInvocations = false;
+      if (read.ok) {
+        if (read.stats.maximum === null) {
+          unevaluated.push({ qualifier: config.qualifier, reason: 'METRIC_STATISTICS_INCOMPLETE' });
+          continue;
+        }
+        maxUtilizationPercent = read.stats.maximum;
+      } else if (isMissingData(read) && noInvocations) {
+        maxUtilizationPercent = 0;
+        inferredFromInvocations = true;
+      } else {
         unevaluated.push({ qualifier: config.qualifier, reason: read.reason });
         continue;
       }
-      if (read.stats.maximum === null) {
-        unevaluated.push({ qualifier: config.qualifier, reason: 'METRIC_STATISTICS_INCOMPLETE' });
-        continue;
-      }
-      // CloudWatch reports ProvisionedConcurrencyUtilization as a ratio (0.5 = 50% of the allocation in use).
-      const maxUtilizationPercent = read.stats.maximum * 100;
       if (maxUtilizationPercent >= t.maxUtilizationPercent) continue;
       const recommended = Math.max(
         0,
         Math.ceil(round(config.allocated * (maxUtilizationPercent / 100) * t.headroomFactor, 6)),
       );
       if (recommended >= config.allocated) continue;
-      flagged.push({ qualifier: config.qualifier, allocated: config.allocated, maxUtilizationPercent, recommended });
+      flagged.push({
+        qualifier: config.qualifier,
+        allocated: config.allocated,
+        maxUtilizationPercent,
+        recommended,
+        inferredFromInvocations,
+      });
     }
 
     if (flagged.length === 0) {
@@ -80,13 +105,27 @@ export const lambdaIdleProvisionedConcurrencyRule = defineRule({
     const recommendedAllocated = flagged.reduce((s, f) => s + f.recommended, 0);
     const evidence: EvidenceItem[] = flagged.map((f) => ({
       key: `provisionedConcurrency.${f.qualifier}`,
-      label: `Qualifier ${f.qualifier}: peak utilization (allocated ${f.allocated}, recommended ${f.recommended})`,
+      label:
+        `Qualifier ${f.qualifier}: peak utilization (allocated ${f.allocated}, recommended ${f.recommended})` +
+        (f.inferredFromInvocations ? ' - no invocations; utilization metric not emitted' : ''),
       value: pct(f.maxUtilizationPercent),
       unit: '%',
       threshold: `< ${t.maxUtilizationPercent}`,
     }));
+    if (flagged.some((f) => f.inferredFromInvocations)) {
+      evidence.push({
+        key: 'invocations.total',
+        label: 'Function invocations in observation period',
+        value: 0,
+        threshold: 'no invocations; utilization metric not emitted',
+      });
+    }
     evidence.push(
-      { key: 'provisionedConcurrency.currentTotal', label: 'Allocated (flagged configurations)', value: currentAllocated },
+      {
+        key: 'provisionedConcurrency.currentTotal',
+        label: 'Allocated (flagged configurations)',
+        value: currentAllocated,
+      },
       {
         key: 'provisionedConcurrency.recommendedTotal',
         label: 'Recommended (flagged configurations)',

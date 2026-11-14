@@ -11,11 +11,7 @@ import { round } from '@cloudsentry/utilities';
 
 /** Why a metric could not be used. Missing data is never coerced to zero. */
 export type MetricFailureCode =
-  | 'METRICS_NOT_COLLECTED'
-  | 'METRIC_MISSING'
-  | 'NO_DATA'
-  | 'ERROR'
-  | 'INSUFFICIENT_COVERAGE';
+  'METRICS_NOT_COLLECTED' | 'METRIC_MISSING' | 'NO_DATA' | 'ERROR' | 'INSUFFICIENT_COVERAGE';
 
 export type MetricFailure = { ok: false; reason: string; code: MetricFailureCode };
 
@@ -31,12 +27,17 @@ export function insufficientCoverageReason(key: string, coverage: number, minCov
  * reason - it is never treated as zero utilization. Coverage below `minCoverage` is also reported as unusable.
  */
 export function readMetricByKey(resource: NormalizedResource, key: string, minCoverage: number): MetricRead {
-  if (!resource.utilization) return { ok: false, code: 'METRICS_NOT_COLLECTED', reason: 'METRICS_NOT_COLLECTED' };
+  if (!resource.utilization)
+    return { ok: false, code: 'METRICS_NOT_COLLECTED', reason: 'METRICS_NOT_COLLECTED' };
   const series = resource.utilization.metrics[key];
   if (!series) return { ok: false, code: 'METRIC_MISSING', reason: `METRIC_NOT_COLLECTED: ${key}` };
   if (series.availability !== 'AVAILABLE' || !series.stats) {
     const code: MetricFailureCode =
-      series.availability === 'ERROR' ? 'ERROR' : series.availability === 'NO_DATA' ? 'NO_DATA' : 'METRIC_MISSING';
+      series.availability === 'ERROR'
+        ? 'ERROR'
+        : series.availability === 'NO_DATA'
+          ? 'NO_DATA'
+          : 'METRIC_MISSING';
     return { ok: false, code, reason: `METRIC_${series.availability}: ${key}` };
   }
   if (series.stats.datapoints === 0) return { ok: false, code: 'NO_DATA', reason: `METRIC_NO_DATA: ${key}` };
@@ -155,6 +156,34 @@ export function ageInDays(createdAt: string | null, now: Date): number | null {
   const t = Date.parse(createdAt);
   if (Number.isNaN(t)) return null;
   return (now.getTime() - t) / 86_400_000;
+}
+
+/**
+ * Age for age gates. Some resources have no AWS creation time (createdAt null); the observation window from
+ * utilization is then used instead. null when neither is known (callers return NOT_EVALUATED).
+ */
+export function resourceAge(
+  resource: NormalizedResource,
+  now: Date,
+): { days: number; source: 'createdAt' | 'observation' } | null {
+  const age = ageInDays(resource.createdAt, now);
+  if (age !== null) return { days: age, source: 'createdAt' };
+  const observed = observableDays(resource);
+  return observed === null ? null : { days: observed, source: 'observation' };
+}
+
+export function ageEvidence(
+  key: string,
+  age: { days: number; source: 'createdAt' | 'observation' },
+  minAgeDays: number,
+): EvidenceItem {
+  return {
+    key,
+    label: age.source === 'createdAt' ? 'Age' : 'Age (creation time unknown; observed period used)',
+    value: round(age.days, 1),
+    unit: 'days',
+    threshold: `>= ${minAgeDays}`,
+  };
 }
 
 export function pct(value: number): number {

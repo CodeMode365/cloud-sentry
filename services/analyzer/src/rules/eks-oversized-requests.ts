@@ -1,7 +1,14 @@
 import type { EvidenceItem } from '@cloudsentry/shared-types';
 import { round } from '@cloudsentry/utilities';
 import { containerInsightsReason, eksClusterEvidence, eksStateGate } from './eks-shared';
-import { coverageEvidence, minCoverageOf, observationEvidence, pct, readMetrics, requireObservation } from './metric-helpers';
+import {
+  coverageEvidence,
+  minCoverageOf,
+  observationEvidence,
+  pct,
+  readMetrics,
+  requireObservation,
+} from './metric-helpers';
 import { defineRule, notEvaluated, NOT_DETECTED } from './types';
 
 const DEFAULTS = { minReservedPercent: 70, maxUsedPercent: 25, minObservationDays: 14, minCoverage: 0.8 };
@@ -13,7 +20,12 @@ type SideResult =
 
 const SIDES = [
   { side: 'cpu', label: 'CPU', reserved: 'node_cpu_reserved_capacity', used: 'node_cpu_utilization' },
-  { side: 'memory', label: 'memory', reserved: 'node_memory_reserved_capacity', used: 'node_memory_utilization' },
+  {
+    side: 'memory',
+    label: 'memory',
+    reserved: 'node_memory_reserved_capacity',
+    used: 'node_memory_utilization',
+  },
 ] as const;
 
 export const eksOversizedRequestsRule = defineRule({
@@ -44,8 +56,13 @@ export const eksOversizedRequestsRule = defineRule({
     if (!obs.ok) return notEvaluated(obs.reason);
 
     const results = SIDES.map((s): SideResult & { side: string; label: string } => {
-      const reads = readMetrics(resource, { reserved: [s.reserved, 'Average'], used: [s.used, 'Average'] }, t.minCoverage);
-      if (!reads.ok) return { side: s.side, label: s.label, status: 'FAILED', reason: containerInsightsReason(reads) };
+      const reads = readMetrics(
+        resource,
+        { reserved: [s.reserved, 'Average'], used: [s.used, 'Average'] },
+        t.minCoverage,
+      );
+      if (!reads.ok)
+        return { side: s.side, label: s.label, status: 'FAILED', reason: containerInsightsReason(reads) };
       const reserved = reads.values.reserved.stats.average;
       const used = reads.values.used.stats.average;
       if (reserved === null || used === null) {
@@ -95,7 +112,9 @@ export const eksOversizedRequestsRule = defineRule({
     const a = resource.attributes;
     const label = resource.name ?? a.clusterName;
     const summary = detected
-      .map((r) => (r.status === 'FAILED' ? '' : `${r.label}: ${pct(r.reserved)}% requested vs ${pct(r.used)}% used`))
+      .map((r) =>
+        r.status === 'FAILED' ? '' : `${r.label}: ${pct(r.reserved)}% requested vs ${pct(r.used)}% used`,
+      )
       .join('; ');
     return {
       outcome: 'DETECTED',
@@ -109,7 +128,8 @@ export const eksOversizedRequestsRule = defineRule({
       evidence,
       suggestedAction: {
         type: 'RIGHTSIZE_POD_REQUESTS',
-        summary: 'Review CPU and memory requests of the largest workloads and align them with observed usage.',
+        summary:
+          'Review CPU and memory requests of the largest workloads and align them with observed usage.',
         steps: [
           'Identify the workloads with the largest gap between requests and usage (Container Insights pod metrics, or the Vertical Pod Autoscaler in recommendation mode).',
           'Lower requests gradually in each workload manifest, keeping headroom for peaks; memory limits that are too low cause OOM kills.',

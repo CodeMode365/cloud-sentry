@@ -26,8 +26,7 @@ export const cloudFrontCompressionDisabledRule = defineRule({
   defaultSeverity: 'LOW',
   defaultThresholds: DEFAULTS,
   thresholdDescriptions: {
-    minGbPerMonth:
-      'BytesDownloaded, normalised to 30 days, must be at least this value (GB, 10^9 bytes).',
+    minGbPerMonth: 'BytesDownloaded, normalised to 30 days, must be at least this value (GB, 10^9 bytes).',
     minObservationDays: 'Minimum days of history required to evaluate.',
     minCoverage:
       'Minimum fraction (0-1) of expected hourly datapoints required to conclude traffic is below the threshold (traffic at or above it is conclusive regardless of coverage).',
@@ -64,7 +63,12 @@ export const cloudFrontCompressionDisabledRule = defineRule({
       confidence: 'LOW',
       riskLevel: 'LOW',
       evidence: [
-        { key: 'distribution.compress', label: 'Default cache behavior compression', value: false, threshold: '= false' },
+        {
+          key: 'distribution.compress',
+          label: 'Default cache behavior compression',
+          value: false,
+          threshold: '= false',
+        },
         {
           key: 'traffic.gbPerMonth',
           label: 'Data downloaded per month (normalised to 30 days)',
@@ -78,7 +82,8 @@ export const cloudFrontCompressionDisabledRule = defineRule({
         {
           key: 'scope.note',
           label: 'Scope',
-          value: 'Only the default cache behavior is checked; other cache behaviors have their own compression setting.',
+          value:
+            'Only the default cache behavior is checked; other cache behaviors have their own compression setting.',
         },
       ],
       suggestedAction: {

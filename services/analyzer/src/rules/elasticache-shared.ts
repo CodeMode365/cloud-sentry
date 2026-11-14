@@ -1,5 +1,11 @@
 import type { EvidenceItem } from '@cloudsentry/shared-types';
-import { NOT_DETECTED, notEvaluated, type NotDetectedOutcome, type NotEvaluatedOutcome, type ResourceOf } from './types';
+import {
+  NOT_DETECTED,
+  notEvaluated,
+  type NotDetectedOutcome,
+  type NotEvaluatedOutcome,
+  type ResourceOf,
+} from './types';
 
 export type CacheCluster = ResourceOf<'ELASTICACHE_CLUSTER'>;
 
@@ -18,7 +24,11 @@ export function isRedisCompatible(engine: string): boolean {
 export function cacheClusterEvidence(resource: CacheCluster): EvidenceItem[] {
   const a = resource.attributes;
   const evidence: EvidenceItem[] = [
-    { key: 'cache.engine', label: 'Engine', value: a.engineVersion ? `${a.engine} ${a.engineVersion}` : a.engine },
+    {
+      key: 'cache.engine',
+      label: 'Engine',
+      value: a.engineVersion ? `${a.engine} ${a.engineVersion}` : a.engine,
+    },
     { key: 'cache.nodeType', label: 'Node type', value: a.cacheNodeType },
     { key: 'cache.numNodes', label: 'Nodes', value: a.numCacheNodes },
   ];

@@ -1,11 +1,28 @@
 import type { EksNodegroupSummary, EvidenceItem } from '@cloudsentry/shared-types';
 import { isMissingData, type MetricFailure } from './metric-helpers';
-import { NOT_DETECTED, notEvaluated, type NotDetectedOutcome, type NotEvaluatedOutcome, type ResourceOf } from './types';
+import {
+  NOT_DETECTED,
+  notEvaluated,
+  type NotDetectedOutcome,
+  type NotEvaluatedOutcome,
+  type ResourceOf,
+} from './types';
 
 export type EksCluster = ResourceOf<'EKS_CLUSTER'>;
 
-/** ACTIVE clusters are evaluated; DELETING is NOT_DETECTED; other states are transient. */
+/**
+ * ACTIVE clusters are evaluated; DELETING is NOT_DETECTED; other states are transient. Discovery placeholders
+ * (state "unknown" when DescribeCluster failed, node group status null with zero sizes when DescribeNodegroup
+ * failed) are NOT_EVALUATED: their zeros are not real.
+ */
 export function eksStateGate(resource: EksCluster): NotDetectedOutcome | NotEvaluatedOutcome | null {
+  if (resource.state === 'unknown') {
+    return notEvaluated('CLUSTER_DETAILS_UNAVAILABLE: cluster details could not be read during discovery');
+  }
+  const unavailable = resource.attributes.nodegroups.filter((ng) => ng.status === null).map((ng) => ng.name);
+  if (unavailable.length > 0) {
+    return notEvaluated(`NODEGROUP_DETAILS_UNAVAILABLE: ${unavailable.join(', ')}`);
+  }
   if (resource.state === 'ACTIVE') return null;
   if (resource.state === 'DELETING') return NOT_DETECTED;
   return notEvaluated(`TRANSIENT_STATE: ${resource.state}`);
@@ -24,7 +41,9 @@ export function containerInsightsReason(failure: MetricFailure): string {
 
 /** The node group with the most desired nodes (ties broken by name for determinism). */
 export function largestNodegroup(nodegroups: readonly EksNodegroupSummary[]): EksNodegroupSummary | null {
-  const sorted = [...nodegroups].sort((x, y) => y.desiredSize - x.desiredSize || x.name.localeCompare(y.name));
+  const sorted = [...nodegroups].sort(
+    (x, y) => y.desiredSize - x.desiredSize || x.name.localeCompare(y.name),
+  );
   return sorted[0] ?? null;
 }
 

@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   ec2PriceListAttributes,
   ec2PriceListTenancy,
+  eksNodeOperatingSystem,
+  elastiCachePriceListEngine,
+  lambdaRuntimeSupportsArm64,
+  nextSmallerCacheNodeType,
   nextSmallerRdsClass,
   rdsPriceListEngine,
 } from './pricing-attributes';
@@ -40,5 +44,40 @@ describe('pricing attribute mapping', () => {
     expect(nextSmallerRdsClass('db.r6g.4xlarge')).toBe('db.r6g.2xlarge');
     expect(nextSmallerRdsClass('db.x2g.metal')).toBeNull();
     expect(nextSmallerRdsClass('not-a-class')).toBeNull();
+  });
+  it('finds the next smaller ElastiCache node type on the same ladder', () => {
+    expect(nextSmallerCacheNodeType('cache.r6g.2xlarge')).toBe('cache.r6g.xlarge');
+    expect(nextSmallerCacheNodeType('cache.m7g.xlarge')).toBe('cache.m7g.large');
+    expect(nextSmallerCacheNodeType('cache.r6g.large')).toBeNull();
+    expect(nextSmallerCacheNodeType('cache.t4g.medium')).toBe('cache.t4g.small');
+    expect(nextSmallerCacheNodeType('cache.t3.micro')).toBeNull();
+    expect(nextSmallerCacheNodeType('cache.r6gd.24xlarge')).toBe('cache.r6gd.16xlarge');
+    expect(nextSmallerCacheNodeType('db.r6g.xlarge')).toBeNull();
+  });
+  it('maps ElastiCache engines and EKS node operating systems', () => {
+    expect(elastiCachePriceListEngine('redis')).toBe('Redis');
+    expect(elastiCachePriceListEngine('Valkey')).toBe('Valkey');
+    expect(elastiCachePriceListEngine('memcached')).toBe('Memcached');
+    expect(elastiCachePriceListEngine('other')).toBeNull();
+    expect(eksNodeOperatingSystem('WINDOWS_FULL_2022_x86_64')).toBe('Windows');
+    expect(eksNodeOperatingSystem('BOTTLEROCKET_ARM_64')).toBe('Linux');
+    expect(eksNodeOperatingSystem(null)).toBe('Linux');
+  });
+  it('recognises Lambda runtimes available on arm64', () => {
+    for (const r of [
+      'nodejs20.x',
+      'python3.13',
+      'java17',
+      'java8.al2',
+      'dotnet8',
+      'ruby3.3',
+      'provided.al2',
+      'provided.al2023',
+    ]) {
+      expect(lambdaRuntimeSupportsArm64(r)).toBe(true);
+    }
+    for (const r of [null, 'go1.x', 'provided', 'java8', 'python3.7', 'nodejs10.x', 'dotnetcore2.1']) {
+      expect(lambdaRuntimeSupportsArm64(r)).toBe(false);
+    }
   });
 });
