@@ -1,0 +1,46 @@
+{
+  "name": "@cloudsentry/scanner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aws-sdk/client-application-auto-scaling": "^3.1169.0",
+    "@aws-sdk/client-backup": "^3.1169.0",
+    "@aws-sdk/client-cloudfront": "^3.1169.0",
+    "@aws-sdk/client-cloudwatch": "^3.1169.0",
+    "@aws-sdk/client-cost-explorer": "^3.1169.0",
+    "@aws-sdk/client-dynamodb": "^3.1169.0",
+    "@aws-sdk/client-ec2": "^3.1169.0",
+    "@aws-sdk/client-efs": "^3.1169.0",
+    "@aws-sdk/client-eks": "^3.1169.0",
+    "@aws-sdk/client-elastic-load-balancing-v2": "^3.1169.0",
+    "@aws-sdk/client-elasticache": "^3.1169.0",
+    "@aws-sdk/client-iam": "^3.1169.0",
+    "@aws-sdk/client-lambda": "^3.1169.0",
+    "@aws-sdk/client-rds": "^3.1169.0",
+    "@aws-sdk/client-redshift": "^3.1169.0",
+    "@aws-sdk/client-resource-groups-tagging-api": "^3.1169.0",
+    "@aws-sdk/client-sfn": "^3.1169.0",
+    "@aws-sdk/client-sns": "^3.1169.0",
+    "@aws-sdk/client-sts": "^3.1169.0",
+    "@cloudsentry/aws-clients": "workspace:*",
+    "@cloudsentry/core": "workspace:*",
+    "@cloudsentry/database": "workspace:*",
+    "@cloudsentry/shared-types": "workspace:*",
+    "@cloudsentry/utilities": "workspace:*",
+    "@cloudsentry/validators": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.164",
+    "aws-sdk-client-mock": "^4.1.0"
+  }
+}
