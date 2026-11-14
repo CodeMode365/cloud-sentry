@@ -1,0 +1,28 @@
+{
+  "name": "@cloudsentry/recommendation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aws-sdk/client-pricing": "^3.1169.0",
+    "@cloudsentry/aws-clients": "workspace:*",
+    "@cloudsentry/core": "workspace:*",
+    "@cloudsentry/database": "workspace:*",
+    "@cloudsentry/shared-types": "workspace:*",
+    "@cloudsentry/utilities": "workspace:*",
+    "@cloudsentry/validators": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.164",
+    "aws-sdk-client-mock": "^4.1.0"
+  }
+}
