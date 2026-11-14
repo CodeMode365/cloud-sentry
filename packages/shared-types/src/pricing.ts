@@ -43,8 +43,15 @@ export type LambdaProvisionedConcurrencyPricingQuery = {
   region: string;
   architecture: string;
 };
-/** EKS control plane per cluster-hour. supportType EXTENDED adds the extended-support charge. */
-export type EksClusterPricingQuery = { kind: 'EKS_CLUSTER_HOURLY'; region: string; supportType: 'STANDARD' | 'EXTENDED' };
+/**
+ * EKS per cluster-hour. STANDARD = control-plane price; EXTENDED = the extended-support SURCHARGE only
+ * (the savings engine adds it to the STANDARD price).
+ */
+export type EksClusterPricingQuery = {
+  kind: 'EKS_CLUSTER_HOURLY';
+  region: string;
+  supportType: 'STANDARD' | 'EXTENDED';
+};
 /** ElastiCache node-hour. cacheEngine: Price List value Redis | Valkey | Memcached. */
 export type ElastiCacheNodePricingQuery = {
   kind: 'ELASTICACHE_NODE_HOURLY';
@@ -70,7 +77,11 @@ export type DynamoDbOnDemandPricingQuery = {
   tableClass: string;
 };
 /** DynamoDB table storage GB-month (paid tier). */
-export type DynamoDbStoragePricingQuery = { kind: 'DYNAMODB_STORAGE_GB_MONTH'; region: string; tableClass: string };
+export type DynamoDbStoragePricingQuery = {
+  kind: 'DYNAMODB_STORAGE_GB_MONTH';
+  region: string;
+  tableClass: string;
+};
 /** Redshift provisioned node-hour. */
 export type RedshiftNodePricingQuery = { kind: 'REDSHIFT_NODE_HOURLY'; region: string; nodeType: string };
 
@@ -191,9 +202,22 @@ export type SavingsRequest =
       targetNodeType: string | null;
       numNodes: number;
     }
-  | { kind: 'ELASTICACHE_DELETE'; region: string; cacheEngine: string; cacheNodeType: string; numNodes: number }
+  | {
+      kind: 'ELASTICACHE_DELETE';
+      region: string;
+      cacheEngine: string;
+      cacheNodeType: string;
+      numNodes: number;
+    }
   // ---- EFS
-  | { kind: 'EFS_DELETE'; region: string; standardGb: number; infrequentAccessGb: number; archiveGb: number; oneZone: boolean }
+  | {
+      kind: 'EFS_DELETE';
+      region: string;
+      standardGb: number;
+      infrequentAccessGb: number;
+      archiveGb: number;
+      oneZone: boolean;
+    }
   | { kind: 'EFS_LIFECYCLE_TO_IA'; region: string; standardGb: number; oneZone: boolean }
   // ---- DynamoDB
   | {
@@ -234,7 +258,12 @@ export type SavingsRequest =
       pausableFraction: number;
     }
   // ---- AWS Backup (only EBS-based recovery points can be priced; see savings docs)
-  | { kind: 'BACKUP_RETENTION_REDUCE'; region: string; ebsGbBeyondRetention: number; otherGbBeyondRetention: number };
+  | {
+      kind: 'BACKUP_RETENTION_REDUCE';
+      region: string;
+      ebsGbBeyondRetention: number;
+      otherGbBeyondRetention: number;
+    };
 
 export interface PricingSourceRef {
   query: PriceQuery;

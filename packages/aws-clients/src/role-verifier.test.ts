@@ -28,17 +28,23 @@ const rds = mockClient(RDSClient);
 const elb = mockClient(ElasticLoadBalancingV2Client);
 const cw = mockClient(CloudWatchClient);
 const iam = mockClient(IAMClient);
-const extended = [
-  LambdaClient,
-  EKSClient,
-  ElastiCacheClient,
-  CloudFrontClient,
-  EFSClient,
-  DynamoDBClient,
-  RedshiftClient,
-  BackupClient,
-  ResourceGroupsTaggingAPIClient,
-].map((c) => mockClient(c));
+/** Minimal view of an aws-sdk-client-mock stub, so stubs for different client classes fit in one array. */
+interface SimpleStub {
+  reset(): void;
+  onAnyCommand(): { resolves(value: object): unknown; rejects(error: unknown): unknown };
+}
+const stub = (m: unknown) => m as SimpleStub;
+const extended: SimpleStub[] = [
+  stub(mockClient(LambdaClient)),
+  stub(mockClient(EKSClient)),
+  stub(mockClient(ElastiCacheClient)),
+  stub(mockClient(CloudFrontClient)),
+  stub(mockClient(EFSClient)),
+  stub(mockClient(DynamoDBClient)),
+  stub(mockClient(RedshiftClient)),
+  stub(mockClient(BackupClient)),
+  stub(mockClient(ResourceGroupsTaggingAPIClient)),
+];
 
 const request = {
   roleArn: 'arn:aws:iam::123456789012:role/CloudSentryReadOnlyRole',
@@ -137,7 +143,7 @@ describe('StsRoleVerifier', () => {
     assumeOk();
     sts.on(GetCallerIdentityCommand).resolves({ Account: '123456789012' });
     ec2.on(DescribeRegionsCommand).resolves({ Regions: [{ RegionName: 'us-east-1' }] });
-    for (const m of [rds, elb, cw, iam]) m.onAnyCommand().resolves({});
+    for (const m of [rds, elb, cw, iam].map(stub)) m.onAnyCommand().resolves({});
     for (const m of extended) {
       m.onAnyCommand().rejects(Object.assign(new Error('denied'), { name: 'AccessDeniedException' }));
     }

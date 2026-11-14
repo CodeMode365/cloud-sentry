@@ -176,7 +176,12 @@ export interface LambdaFunctionAttributes {
   ephemeralStorageMb: number | null;
   lastModified: string | null;
   /** Provisioned concurrency configurations (per alias or version). */
-  provisionedConcurrency: { qualifier: string; allocated: number; requested: number; status: string | null }[];
+  provisionedConcurrency: {
+    qualifier: string;
+    allocated: number;
+    requested: number;
+    status: string | null;
+  }[];
 }
 
 export interface EksNodegroupSummary {
@@ -246,7 +251,11 @@ export interface EfsFileSystemAttributes {
   /** One Zone file systems have an availability zone. */
   availabilityZoneName: string | null;
   /** null when DescribeLifecycleConfiguration failed (unknown), [] fields null when not configured. */
-  lifecycle: { transitionToIA: string | null; transitionToArchive: string | null; transitionToPrimary: string | null } | null;
+  lifecycle: {
+    transitionToIA: string | null;
+    transitionToArchive: string | null;
+    transitionToPrimary: string | null;
+  } | null;
 }
 
 export interface DynamoDbTableAttributes {
