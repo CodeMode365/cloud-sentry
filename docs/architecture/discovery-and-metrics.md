@@ -69,6 +69,52 @@ these keys. EC2 DiskReadOps/DiskWriteOps only report instance-store activity, so
 collected within `METRICS_REUSE_HOURS` for the same lookback, with no `ERROR`/`NOT_COLLECTED` metrics, is reused.
 Everything else that qualifies is collected again.
 
+## Extended services
+
+Contract: [`extended-services.md`](./extended-services.md) sections 1, 2 and 6. One module per type in
+`services/scanner/src/discovery/`:
+
+| Type                    | Module                        | Calls (paginated where AWS supports it)                                                         | Tags                |
+| ----------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------- | ------------------- |
+| LAMBDA_FUNCTION         | `lambda-functions.ts`         | `ListFunctions` (`$LATEST`), `ListProvisionedConcurrencyConfigs` per function                   | Tagging API         |
+| EKS_CLUSTER             | `eks-clusters.ts`             | `ListClusters`, `DescribeCluster`, `ListNodegroups`, `DescribeNodegroup`, `ListFargateProfiles` | DescribeCluster     |
+| ELASTICACHE_CLUSTER     | `elasticache-clusters.ts`     | `DescribeCacheClusters`                                                                         | Tagging API         |
+| CLOUDFRONT_DISTRIBUTION | `cloudfront-distributions.ts` | `ListDistributions` (us-east-1 client, once per scan)                                           | not collected       |
+| EFS_FILE_SYSTEM         | `efs-file-systems.ts`         | `DescribeFileSystems` (`deleted` excluded), `DescribeLifecycleConfiguration` per fs             | DescribeFileSystems |
+| DYNAMODB_TABLE          | `dynamodb-tables.ts`          | `ListTables`, `DescribeTable` per table, `DescribeScalableTargets` (once per region)            | Tagging API         |
+| REDSHIFT_CLUSTER        | `redshift-clusters.ts`        | `DescribeClusters` (provisioned only)                                                           | DescribeClusters    |
+| BACKUP_PLAN             | `backup-plans.ts`             | `ListBackupPlans`, `GetBackupPlan` per plan                                                     | not collected       |
+| BACKUP_VAULT            | `backup-vaults.ts`            | `ListBackupVaults`, `ListRecoveryPointsByBackupVault` per vault (cap 5,000 points)              | not collected       |
+
+- `tagging.ts` `fetchTagsByArn(client, resourceTypeFilters, logger?)` runs one paginated `tag:GetResources` call
+  per region and filter. Any failure returns an empty map and logs a warning, so resources get `tags: {}`.
+- Per-item sub-calls run through `mapSettledWithConcurrency` with a limit of 5 (`SUB_CALL_CONCURRENCY`). A failed
+  sub-call degrades only that item, logs a warning and never fails the region. A failed provisioned-concurrency
+  listing gives `provisionedConcurrency: []`. A failed lifecycle call gives `lifecycle: null`. A failed scalable-target
+  call gives `autoScalingEnabled: null` for every table. A failed `GetBackupPlan` gives `rules: []`. A failed
+  recovery-point listing gives empty totals with `truncated: true`. If `DescribeTable` fails, the table keeps state
+  `unknown` and billing mode `UNKNOWN`. If any EKS cluster-level call or a `DescribeNodegroup` fails, the cluster
+  keeps state `unknown`, and the failed nodegroup has `status: null` with zero sizes as placeholders. State
+  `unknown` means no metrics are collected and no state-gated rule fires. An item reported as `*NotFound` (deleted
+  mid-scan) is dropped.
+- Backup vault summaries: recovery points are grouped by AWS Backup resource type into non-cumulative age buckets
+  (`BACKUP_AGE_BUCKETS_DAYS`; age = `CreationDate` vs `ctx.now`, default the current time). Points without a
+  `CreationDate` fall in the 0-day bucket. `resourcesWithMultiplePlans` lists resources with points from 2 or more
+  distinct `CreatedBy.BackupPlanId` values in the last 35 days, sorted by ARN, capped at 50.
+- `DiscoveryContext` gains optional `logger` (set by `runRegionalDiscovery` per region) and `now`.
+- Types in `GLOBAL_RESOURCE_TYPES` (CloudFront) run once with region `global`, whatever the regions list holds.
+  Their outcome is reported as `regionsSucceeded: ['global']` or `regionsFailed: [{ region: 'global', ... }]`.
+
+Metrics: catalog entries may override `namespace`/`dimensions` per metric (LambdaInsights `function_name`), add
+`extraDimensions` (CloudFront `Region=Global`), produce `dynamicQueries` with custom keys (one
+`ProvisionedConcurrencyUtilization:Maximum:<qualifier>` query per provisioned-concurrency config, with dimensions
+`FunctionName` + `Resource=<name>:<qualifier>`), and route to another CloudWatch region via `metricsRegion`
+(CloudFront uses `us-east-1`). `metricQueriesFor(resource)` resolves all of this and `metricsRegionFor(resource)`
+names the CloudWatch region. A query can set `scale`: provisioned-concurrency utilization is a 0..1 ratio in
+CloudWatch, so it is multiplied by 100 and reported in `Percent`. `MetricStatistics.zeroFraction` is the share of
+datapoints exactly equal to 0, or `null` without datapoints. Reuse also requires the previous utilization to contain
+every key the catalog now plans, so a new provisioned-concurrency qualifier is always collected.
+
 ## Cost Explorer
 
 `fetchCostSnapshot(ce, { now, months, includeResourceLevel, logger })` returns a `CostSnapshot` without tenant,
@@ -122,5 +168,7 @@ Colocated `*.test.ts` files use `aws-sdk-client-mock`. They cover pagination and
 module, regional failure isolation, throttling retries and deduplication, metric batching (both the 500-query and
 the datapoint limit), `NO_DATA` vs zero, coverage, `NextToken`, region failure, reuse partitioning, Cost Explorer
 parsing (including `Estimated`, pagination, partial and denied access, resource-level opt-in, and first-day-of-month
-ranges), anomaly detection and normalization. Fixtures in `src/__fixtures__/` are synthetic, SDK-shaped responses,
-used only by tests.
+ranges), anomaly detection and normalization. Extended-service tests also cover sub-call degradation, the tagging
+helper, the run-once behaviour for global types, per-qualifier Lambda keys, CloudFront routing to us-east-1,
+`zeroFraction`, and backup age buckets, multiple-plan detection and truncation. Fixtures in `src/__fixtures__/` are
+synthetic, SDK-shaped responses, used only by tests.
