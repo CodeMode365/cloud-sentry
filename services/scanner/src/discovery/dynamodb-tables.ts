@@ -10,7 +10,13 @@ import {
 } from '@aws-sdk/client-dynamodb';
 import type { ResourceGroupsTaggingAPIClient } from '@aws-sdk/client-resource-groups-tagging-api';
 import type { DiscoveredResourceOf } from '@cloudsentry/shared-types';
-import { awsErrorName, errorMessage, mapSettledWithConcurrency, sum, type Logger } from '@cloudsentry/utilities';
+import {
+  awsErrorName,
+  errorMessage,
+  mapSettledWithConcurrency,
+  sum,
+  type Logger,
+} from '@cloudsentry/utilities';
 import {
   isNotFoundError,
   loggerFor,
@@ -79,11 +85,17 @@ export function mapDynamoDbTable(
       tableName,
       billingMode,
       tableClass: table ? (table.TableClassSummary?.TableClass ?? 'STANDARD') : DYNAMODB_UNKNOWN,
-      provisionedReadCapacityUnits: provisioned ? orNull(table?.ProvisionedThroughput?.ReadCapacityUnits) : null,
-      provisionedWriteCapacityUnits: provisioned ? orNull(table?.ProvisionedThroughput?.WriteCapacityUnits) : null,
+      provisionedReadCapacityUnits: provisioned
+        ? orNull(table?.ProvisionedThroughput?.ReadCapacityUnits)
+        : null,
+      provisionedWriteCapacityUnits: provisioned
+        ? orNull(table?.ProvisionedThroughput?.WriteCapacityUnits)
+        : null,
       gsiCount: gsis.length,
       gsiProvisionedReadCapacityUnits: sum(gsis.map((g) => g.ProvisionedThroughput?.ReadCapacityUnits ?? 0)),
-      gsiProvisionedWriteCapacityUnits: sum(gsis.map((g) => g.ProvisionedThroughput?.WriteCapacityUnits ?? 0)),
+      gsiProvisionedWriteCapacityUnits: sum(
+        gsis.map((g) => g.ProvisionedThroughput?.WriteCapacityUnits ?? 0),
+      ),
       tableSizeBytes: table?.TableSizeBytes ?? 0,
       itemCount: table?.ItemCount ?? 0,
       autoScalingEnabled: autoScaledTables ? autoScaledTables.has(tableName) : null,

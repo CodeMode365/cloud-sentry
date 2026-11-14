@@ -20,7 +20,10 @@ describe('fetchTagsByArn', () => {
 
     const calls = taggingMock.commandCalls(GetResourcesCommand);
     expect(calls).toHaveLength(2);
-    expect(calls[0]?.args[0].input).toMatchObject({ ResourceTypeFilters: ['lambda:function'], ResourcesPerPage: 100 });
+    expect(calls[0]?.args[0].input).toMatchObject({
+      ResourceTypeFilters: ['lambda:function'],
+      ResourcesPerPage: 100,
+    });
     expect(calls[1]?.args[0].input.PaginationToken).toBe('tags-2');
     expect([...tags.keys()]).toEqual([
       'arn:aws:lambda:us-east-1:111122223333:function:fixture-api',

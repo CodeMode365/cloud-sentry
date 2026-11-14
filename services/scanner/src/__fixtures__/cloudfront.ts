@@ -24,6 +24,7 @@ function summary(overrides: Partial<DistributionSummary>): DistributionSummary {
     Restrictions: { GeoRestriction: { RestrictionType: 'none', Quantity: 0 } },
     WebACLId: '',
     HttpVersion: 'http2',
+    IsIPV6Enabled: true,
     Staging: false,
     ...overrides,
   };

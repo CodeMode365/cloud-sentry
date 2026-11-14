@@ -156,15 +156,13 @@ export const METRIC_CATALOG: Partial<Record<ResourceType, MetricCatalogEntry>> =
       { metricName: 'Errors', stat: 'Sum', unit: 'Count' },
       { metricName: 'Throttles', stat: 'Sum', unit: 'Count' },
       // Lambda Insights (NO_DATA unless the extension is enabled on the function).
-      ...(['memory_utilization', 'used_memory_max'] as const).map(
-        (metricName): MetricSpec => ({
-          metricName,
-          stat: 'Maximum',
-          unit: metricName === 'memory_utilization' ? 'Percent' : 'Megabytes',
-          namespace: 'LambdaInsights',
-          dimensions: (r) => [{ name: 'function_name', value: lambdaFunctionName(r) }],
-        }),
-      ),
+      ...(['memory_utilization', 'used_memory_max'] as const).map((metricName): MetricSpec => ({
+        metricName,
+        stat: 'Maximum',
+        unit: metricName === 'memory_utilization' ? 'Percent' : 'Megabytes',
+        namespace: 'LambdaInsights',
+        dimensions: (r) => [{ name: 'function_name', value: lambdaFunctionName(r) }],
+      })),
     ],
     dynamicQueries: lambdaProvisionedConcurrencyQueries,
   },
@@ -267,16 +265,14 @@ export function metricQueriesFor(resource: DiscoveredResource): MetricQuery[] {
     ...(entry.extraDimensions ?? []),
   ];
   return [
-    ...entry.metrics.map(
-      (spec): MetricQuery => ({
-        key: metricKey(spec.metricName, spec.stat),
-        namespace: spec.namespace ?? entry.namespace,
-        metricName: spec.metricName,
-        stat: spec.stat,
-        unit: spec.unit,
-        dimensions: spec.dimensions?.(resource) ?? dimensions,
-      }),
-    ),
+    ...entry.metrics.map((spec): MetricQuery => ({
+      key: metricKey(spec.metricName, spec.stat),
+      namespace: spec.namespace ?? entry.namespace,
+      metricName: spec.metricName,
+      stat: spec.stat,
+      unit: spec.unit,
+      dimensions: spec.dimensions?.(resource) ?? dimensions,
+    })),
     ...(entry.dynamicQueries?.(resource) ?? []),
   ];
 }

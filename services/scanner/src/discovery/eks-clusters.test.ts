@@ -51,8 +51,12 @@ describe('discoverEksClusters', () => {
     eksMock
       .on(ListFargateProfilesCommand, { clusterName: 'fixture-prod' })
       .resolves({ fargateProfileNames: ['fp-default', 'fp-batch'] });
-    eksMock.on(DescribeNodegroupCommand, { clusterName: 'fixture-prod', nodegroupName: 'ng-a' }).resolves(eksNodegroupA);
-    eksMock.on(DescribeNodegroupCommand, { clusterName: 'fixture-prod', nodegroupName: 'ng-b' }).resolves(eksNodegroupB);
+    eksMock
+      .on(DescribeNodegroupCommand, { clusterName: 'fixture-prod', nodegroupName: 'ng-a' })
+      .resolves(eksNodegroupA);
+    eksMock
+      .on(DescribeNodegroupCommand, { clusterName: 'fixture-prod', nodegroupName: 'ng-b' })
+      .resolves(eksNodegroupB);
     eksMock
       .on(DescribeNodegroupCommand, { clusterName: 'fixture-degraded', nodegroupName: 'ng-ok' })
       .resolves({ nodegroup: { ...eksNodegroupA.nodegroup, nodegroupName: 'ng-ok' } });

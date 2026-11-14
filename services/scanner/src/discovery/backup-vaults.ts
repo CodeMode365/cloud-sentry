@@ -22,7 +22,11 @@ export const MULTIPLE_PLANS_CAP = 50;
 
 type RecoveryPointSummary = Pick<
   BackupVaultAttributes,
-  'recoveryPointCount' | 'totalBytes' | 'oldestRecoveryPointAt' | 'byResourceType' | 'resourcesWithMultiplePlans'
+  | 'recoveryPointCount'
+  | 'totalBytes'
+  | 'oldestRecoveryPointAt'
+  | 'byResourceType'
+  | 'resourcesWithMultiplePlans'
 >;
 
 /** Lower bound (days) of the non-cumulative age bucket an age falls into; negative ages count as 0. */
@@ -86,7 +90,11 @@ export function summarizeRecoveryPoints(
     .filter(([, v]) => v.planIds.size >= 2)
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .slice(0, MULTIPLE_PLANS_CAP)
-    .map(([resourceArn, v]) => ({ resourceArn, resourceType: v.resourceType, planIds: [...v.planIds].sort() }));
+    .map(([resourceArn, v]) => ({
+      resourceArn,
+      resourceType: v.resourceType,
+      planIds: [...v.planIds].sort(),
+    }));
 
   return {
     recoveryPointCount: points.length,
@@ -123,6 +131,8 @@ export function mapBackupVault(
   summary: RecoveryPointSummary,
   truncated: boolean,
   ctx: DiscoveryContext,
+  /** False when recovery points could not be listed: totals are then unknown, not zero. */
+  listed = true,
 ): DiscoveredResourceOf<'BACKUP_VAULT'> | null {
   const name = vault.BackupVaultName;
   if (!name) return null;
@@ -133,7 +143,8 @@ export function mapBackupVault(
     resourceId: name,
     arn: vault.BackupVaultArn ?? `arn:aws:backup:${ctx.region}:${ctx.accountId}:backup-vault:${name}`,
     name,
-    state: 'active',
+    // 'unknown' tells rules the recovery-point totals were not collected, so empty totals mean "unknown", not "none".
+    state: listed ? 'active' : 'unknown',
     tags: {},
     createdAt: toIso(vault.CreationDate),
     attributes: {
@@ -153,7 +164,7 @@ export interface BackupVaultDiscoveryOptions {
 /**
  * AWS Backup vaults with recovery point summaries. Recovery points are listed per vault with bounded
  * concurrency and capped at RECOVERY_POINT_CAP (`truncated: true`). When listing fails for one vault,
- * that vault is reported with empty totals and `truncated: true` (totals cover only listed points).
+ * that vault is reported with state 'unknown', empty totals and `truncated: true`.
  * Ages are computed against `ctx.now` (default: current time).
  */
 export async function discoverBackupVaults(
@@ -189,7 +200,13 @@ export async function discoverBackupVaults(
         message: errorMessage(result.reason),
       });
     }
-    const mapped = mapBackupVault(result.item, summarizeRecoveryPoints(points, now), truncated, ctx);
+    const mapped = mapBackupVault(
+      result.item,
+      summarizeRecoveryPoints(points, now),
+      truncated,
+      ctx,
+      result.status === 'fulfilled',
+    );
     if (mapped) out.push(mapped);
   }
   return out;

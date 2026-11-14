@@ -20,7 +20,9 @@ import {
 type Lifecycle = EfsFileSystemAttributes['lifecycle'];
 
 /** Merges EFS lifecycle policies (each policy object carries one transition) into one record. */
-export function mapLifecyclePolicies(policies: readonly LifecyclePolicy[] | undefined): NonNullable<Lifecycle> {
+export function mapLifecyclePolicies(
+  policies: readonly LifecyclePolicy[] | undefined,
+): NonNullable<Lifecycle> {
   const find = (pick: (p: LifecyclePolicy) => string | undefined): string | null =>
     policies?.map(pick).find((v): v is string => !!v) ?? null;
   return {
@@ -82,7 +84,9 @@ export async function discoverEfsFileSystems(
   }
 
   const lifecycles = await mapSettledWithConcurrency(fileSystems, SUB_CALL_CONCURRENCY, async (fs) => {
-    const out = await client.send(new DescribeLifecycleConfigurationCommand({ FileSystemId: fs.FileSystemId }));
+    const out = await client.send(
+      new DescribeLifecycleConfigurationCommand({ FileSystemId: fs.FileSystemId }),
+    );
     return mapLifecyclePolicies(out.LifecyclePolicies);
   });
 

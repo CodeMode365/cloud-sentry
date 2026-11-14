@@ -26,7 +26,10 @@ beforeEach(() => {
 
 describe('discoverElastiCacheClusters', () => {
   it('follows Marker pagination, maps fields and joins tags by ARN', async () => {
-    cacheMock.on(DescribeCacheClustersCommand).resolvesOnce(cacheClustersPage1).resolvesOnce(cacheClustersPage2);
+    cacheMock
+      .on(DescribeCacheClustersCommand)
+      .resolvesOnce(cacheClustersPage1)
+      .resolvesOnce(cacheClustersPage2);
     taggingMock.on(GetResourcesCommand).resolves({
       ResourceTagMappingList: [
         {
@@ -80,7 +83,7 @@ describe('discoverElastiCacheClusters', () => {
   });
 
   it('continues with empty tags when the Tagging API fails', async () => {
-    cacheMock.on(DescribeCacheClustersCommand).resolves(cacheClustersPage1);
+    cacheMock.on(DescribeCacheClustersCommand).resolves({ CacheClusters: cacheClustersPage1.CacheClusters });
     taggingMock.on(GetResourcesCommand).rejects(awsError('ThrottlingException'));
     const { logger, lines } = captureLogger();
     const result = await run(logger);

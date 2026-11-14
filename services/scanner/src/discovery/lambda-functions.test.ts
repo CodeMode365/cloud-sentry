@@ -114,7 +114,10 @@ describe('discoverLambdaFunctions', () => {
       attributes: { memoryMb: 128, timeoutSeconds: 3, architecture: 'x86_64', provisionedConcurrency: [] },
     });
     expect(warnings(lines)).toHaveLength(1);
-    expect(warnings(lines)[0]).toMatchObject({ functionName: 'fixture-worker', awsError: 'ServiceException' });
+    expect(warnings(lines)[0]).toMatchObject({
+      functionName: 'fixture-worker',
+      awsError: 'ServiceException',
+    });
   });
 
   it('still returns functions with empty tags when the Tagging API fails', async () => {

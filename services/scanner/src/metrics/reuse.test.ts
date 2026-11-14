@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { DiscoveredResource, ResourceUtilization } from '@cloudsentry/shared-types';
+import type { DiscoveredResource, MetricSeriesSummary, ResourceUtilization } from '@cloudsentry/shared-types';
 import { resourceKeyFor } from '@cloudsentry/utilities';
+import { cloudFrontDistribution, lambdaFunction } from '../__fixtures__/resources';
+import { metricQueriesFor } from './catalog';
 import { partitionForReuse } from './reuse';
 
 const NOW = new Date('2026-11-14T12:00:00Z');
@@ -30,28 +32,32 @@ function volume(id: string, state: string): DiscoveredResource {
   };
 }
 
+/** Utilization holding every key the catalog plans for `resource` (an in-use EBS volume by default). */
 function util(
   collectedAt: string,
   lookbackDays = 30,
   availability: 'AVAILABLE' | 'ERROR' = 'AVAILABLE',
+  resource: DiscoveredResource = volume('vol-template', 'in-use'),
 ): ResourceUtilization {
+  const metrics: Record<string, MetricSeriesSummary> = {};
+  for (const q of metricQueriesFor(resource)) {
+    metrics[q.key] = {
+      namespace: q.namespace,
+      metricName: q.metricName,
+      statistic: q.stat,
+      periodSeconds: 3600,
+      unit: q.unit,
+      availability,
+      stats: null,
+    };
+  }
   return {
     lookbackDays,
     periodStart: '2026-10-15T12:00:00Z',
     periodEnd: '2026-11-14T12:00:00Z',
     collectedAt,
     observableDays: 30,
-    metrics: {
-      'VolumeReadOps:Sum': {
-        namespace: 'AWS/EBS',
-        metricName: 'VolumeReadOps',
-        statistic: 'Sum',
-        periodSeconds: 3600,
-        unit: 'Count',
-        availability,
-        stats: null,
-      },
-    },
+    metrics,
   };
 }
 
@@ -105,5 +111,24 @@ describe('partitionForReuse', () => {
     );
     expect(reuse.size).toBe(0);
     expect(collect).toHaveLength(1);
+  });
+
+  it('recollects when the catalog now plans keys the previous utilization lacks (new PC qualifier)', () => {
+    const before = lambdaFunction('fixture-api', ['live']);
+    const after = lambdaFunction('fixture-api', ['live', 'canary']);
+    const cf = cloudFrontDistribution('E1');
+    const previous = new Map<string, ResourceUtilization | null>([
+      [key(before), util('2026-11-14T10:00:00Z', 30, 'AVAILABLE', before)],
+      [key(cf), util('2026-11-14T10:00:00Z', 30, 'AVAILABLE', cf)],
+    ]);
+    const opts = { reuseHours: 6, lookbackDays: 30, now: NOW };
+
+    const same = partitionForReuse([before, cf], previous, opts);
+    expect([...same.reuse.keys()]).toEqual([key(before), key(cf)]);
+    expect(same.collect).toEqual([]);
+
+    const changed = partitionForReuse([after, cf], previous, opts);
+    expect([...changed.reuse.keys()]).toEqual([key(cf)]);
+    expect(changed.collect.map((r) => r.resourceId)).toEqual([after.resourceId]);
   });
 });

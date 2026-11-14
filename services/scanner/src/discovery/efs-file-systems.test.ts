@@ -16,15 +16,13 @@ beforeEach(() => efsMock.reset());
 describe('discoverEfsFileSystems', () => {
   it('paginates, excludes deleted file systems, maps sizes and lifecycle, and degrades a failed lifecycle call', async () => {
     efsMock.on(DescribeFileSystemsCommand).resolvesOnce(fileSystemsPage1).resolvesOnce(fileSystemsPage2);
-    efsMock
-      .on(DescribeLifecycleConfigurationCommand, { FileSystemId: 'fs-0aaaaaaaaaaaaaaa1' })
-      .resolves({
-        LifecyclePolicies: [
-          { TransitionToIA: 'AFTER_30_DAYS' },
-          { TransitionToPrimaryStorageClass: 'AFTER_1_ACCESS' },
-          { TransitionToArchive: 'AFTER_90_DAYS' },
-        ],
-      });
+    efsMock.on(DescribeLifecycleConfigurationCommand, { FileSystemId: 'fs-0aaaaaaaaaaaaaaa1' }).resolves({
+      LifecyclePolicies: [
+        { TransitionToIA: 'AFTER_30_DAYS' },
+        { TransitionToPrimaryStorageClass: 'AFTER_1_ACCESS' },
+        { TransitionToArchive: 'AFTER_90_DAYS' },
+      ],
+    });
     efsMock
       .on(DescribeLifecycleConfigurationCommand, { FileSystemId: 'fs-0aaaaaaaaaaaaaaa2' })
       .resolves({ LifecyclePolicies: [] });

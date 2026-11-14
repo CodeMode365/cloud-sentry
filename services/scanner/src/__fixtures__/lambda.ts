@@ -43,26 +43,28 @@ export const lambdaFunctionsPage2: Partial<ListFunctionsCommandOutput> = {
   ],
 };
 
-export const fixtureApiProvisionedConcurrencyPage1: Partial<ListProvisionedConcurrencyConfigsCommandOutput> = {
-  NextMarker: 'pc-2',
-  ProvisionedConcurrencyConfigs: [
-    {
-      FunctionArn: `${fnArn('fixture-api')}:live`,
-      AllocatedProvisionedConcurrentExecutions: 10,
-      AvailableProvisionedConcurrentExecutions: 10,
-      RequestedProvisionedConcurrentExecutions: 10,
-      Status: 'READY',
-    },
-  ],
-};
+export const fixtureApiProvisionedConcurrencyPage1: Partial<ListProvisionedConcurrencyConfigsCommandOutput> =
+  {
+    NextMarker: 'pc-2',
+    ProvisionedConcurrencyConfigs: [
+      {
+        FunctionArn: `${fnArn('fixture-api')}:live`,
+        AllocatedProvisionedConcurrentExecutions: 10,
+        AvailableProvisionedConcurrentExecutions: 10,
+        RequestedProvisionedConcurrentExecutions: 10,
+        Status: 'READY',
+      },
+    ],
+  };
 
-export const fixtureApiProvisionedConcurrencyPage2: Partial<ListProvisionedConcurrencyConfigsCommandOutput> = {
-  ProvisionedConcurrencyConfigs: [
-    {
-      FunctionArn: `${fnArn('fixture-api')}:7`,
-      AllocatedProvisionedConcurrentExecutions: 0,
-      RequestedProvisionedConcurrentExecutions: 5,
-      Status: 'IN_PROGRESS',
-    },
-  ],
-};
+export const fixtureApiProvisionedConcurrencyPage2: Partial<ListProvisionedConcurrencyConfigsCommandOutput> =
+  {
+    ProvisionedConcurrencyConfigs: [
+      {
+        FunctionArn: `${fnArn('fixture-api')}:7`,
+        AllocatedProvisionedConcurrentExecutions: 0,
+        RequestedProvisionedConcurrentExecutions: 5,
+        Status: 'IN_PROGRESS',
+      },
+    ],
+  };

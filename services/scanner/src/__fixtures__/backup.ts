@@ -98,7 +98,13 @@ export const recoveryPointsPage1: RecoveryPointByBackupVault[] = [
 /** Page 2 of fixture-vault's recovery points. */
 export const recoveryPointsPage2: RecoveryPointByBackupVault[] = [
   recoveryPoint('arn:aws:rds:us-east-1:111122223333:db:fixture-db', 'RDS', 400, 1000, 'plan-daily'),
-  recoveryPoint('arn:aws:elasticfilesystem:us-east-1:111122223333:file-system/fs-1', 'EFS', 800, 5, 'plan-daily'),
+  recoveryPoint(
+    'arn:aws:elasticfilesystem:us-east-1:111122223333:file-system/fs-1',
+    'EFS',
+    800,
+    5,
+    'plan-daily',
+  ),
   recoveryPoint(vol('vol-3'), 'EBS', 5, undefined, 'plan-daily'),
   recoveryPoint(vol('vol-3'), 'EBS', 6, 50, undefined), // on-demand backup: no plan
 ];

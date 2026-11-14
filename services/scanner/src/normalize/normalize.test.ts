@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { DiscoveredResource, ResourceUtilization } from '@cloudsentry/shared-types';
-import { resourceKeyFor } from '@cloudsentry/utilities';
+import { parseResourceKey, resourceKeyFor } from '@cloudsentry/utilities';
+import {
+  backupVault,
+  cloudFrontDistribution,
+  dynamoDbTable,
+  lambdaFunction,
+} from '../__fixtures__/resources';
 import { normalizeResources } from './normalize';
 
 const account = '111122223333';
@@ -96,5 +102,35 @@ describe('normalizeResources', () => {
     expect(exists('snap-c')).toBe(false);
     expect(exists('snap-d')).toBeNull();
     expect(byId.get('snap-a')?.utilization).toBeNull();
+  });
+
+  it('accepts extended types, including global resources keyed with region global', () => {
+    const cf = cloudFrontDistribution('E1');
+    const fn = lambdaFunction();
+    const cfKey = resourceKeyFor(account, 'global', 'CLOUDFRONT_DISTRIBUTION', 'E1');
+    const util: ResourceUtilization = {
+      lookbackDays: 30,
+      periodStart: '2026-10-15T00:00:00Z',
+      periodEnd: '2026-11-14T00:00:00Z',
+      collectedAt: '2026-11-14T00:00:00Z',
+      observableDays: 30,
+      metrics: {},
+    };
+
+    const result = normalizeResources(
+      [cf, fn, dynamoDbTable(), backupVault(), cf],
+      new Map([[cfKey, util]]),
+      {
+        succeededRegionsByType: { CLOUDFRONT_DISTRIBUTION: ['global'] },
+      },
+    );
+
+    expect(result).toHaveLength(4);
+    const normalizedCf = result.find((r) => r.resourceType === 'CLOUDFRONT_DISTRIBUTION');
+    expect(normalizedCf?.resourceKey).toBe(cfKey);
+    expect(parseResourceKey(cfKey)).toMatchObject({ region: 'global', resourceId: 'E1' });
+    expect(normalizedCf?.utilization).toBe(util);
+    expect(normalizedCf?.attributes).toEqual(cf.attributes);
+    expect(result.find((r) => r.resourceType === 'LAMBDA_FUNCTION')?.utilization).toBeNull();
   });
 });

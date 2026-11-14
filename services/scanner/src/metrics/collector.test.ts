@@ -7,6 +7,7 @@ import {
 } from '@aws-sdk/client-cloudwatch';
 import type { DiscoveredResource } from '@cloudsentry/shared-types';
 import { resourceKeyFor, silentLogger } from '@cloudsentry/utilities';
+import { cloudFrontDistribution, lambdaFunction } from '../__fixtures__/resources';
 import { batchSizeFor, collectUtilization, observableDaysFor, summarizeValues } from './collector';
 
 const NOW = new Date('2026-11-14T12:30:00Z');
@@ -66,8 +67,17 @@ describe('collector helpers', () => {
       datapoints: 4,
       expectedDatapoints: 8,
       coverage: 0.5,
+      zeroFraction: 0,
     });
     expect(stats.p50).toBe(2.5);
+  });
+
+  it('computes zeroFraction as the share of datapoints exactly 0, null without datapoints', () => {
+    expect(summarizeValues([0, 0, 1, 2], 4).zeroFraction).toBe(0.5);
+    expect(summarizeValues([0, 0, 0], 3).zeroFraction).toBe(1);
+    expect(summarizeValues([0.001, 3], 2).zeroFraction).toBe(0);
+    expect(summarizeValues([0, 1, 1], 3).zeroFraction).toBe(0.3333);
+    expect(summarizeValues([], 10)).toMatchObject({ zeroFraction: null, datapoints: 0, average: null });
   });
 
   it('bounds observable days by creation time', () => {
@@ -158,7 +168,13 @@ describe('collectUtilization', () => {
     expect(util?.observableDays).toBe(10);
     const cpuAvg = util?.metrics['CPUUtilization:Average'];
     expect(cpuAvg?.availability).toBe('AVAILABLE');
-    expect(cpuAvg?.stats).toMatchObject({ average: 0, maximum: 0, datapoints: 3, expectedDatapoints: 240 });
+    expect(cpuAvg?.stats).toMatchObject({
+      average: 0,
+      maximum: 0,
+      datapoints: 3,
+      expectedDatapoints: 240,
+      zeroFraction: 1,
+    });
     expect(cpuAvg?.stats?.coverage).toBeCloseTo(3 / 240, 4);
     expect(util?.metrics['CPUUtilization:Maximum']?.stats?.maximum).toBe(7);
     expect(util?.metrics['NetworkIn:Sum']).toMatchObject({ availability: 'NO_DATA', stats: null });
@@ -202,5 +218,118 @@ describe('collectUtilization', () => {
     expect(westMetrics.every((m) => m.availability === 'ERROR' && m.stats === null)).toBe(true);
     eastMock.restore();
     westMock.restore();
+  });
+
+  it('queries CloudFront with the us-east-1 client while keeping its global resourceKey', async () => {
+    const cf = cloudFrontDistribution('E1');
+    const fn = lambdaFunction('fixture-eu', [], 'eu-west-1');
+    const eastClient = new CloudWatchClient({ region: 'us-east-1' });
+    const westClient = new CloudWatchClient({ region: 'eu-west-1' });
+    const eastMock = mockClient(eastClient);
+    const westMock = mockClient(westClient);
+    const respond = (input: GetMetricDataCommandInput) => ({
+      MetricDataResults: (input.MetricDataQueries ?? []).map((q) => ({
+        Id: q.Id,
+        Values: [0, 10, 20],
+        StatusCode: 'Complete',
+      })),
+    });
+    eastMock.on(GetMetricDataCommand).callsFake(respond);
+    westMock.on(GetMetricDataCommand).callsFake(respond);
+    const requested: string[] = [];
+
+    const result = await collectUtilization(
+      [cf, fn],
+      {
+        cloudwatch: (region) => {
+          requested.push(region);
+          if (region === 'us-east-1') return eastClient;
+          if (region === 'eu-west-1') return westClient;
+          throw new Error(`unexpected CloudWatch region ${region}`);
+        },
+      },
+      { lookbackDays: 30, now: NOW, logger: silentLogger },
+    );
+
+    expect(requested.sort()).toEqual(['eu-west-1', 'us-east-1']);
+    const eastQueries = eastMock.commandCalls(GetMetricDataCommand)[0]?.args[0].input.MetricDataQueries ?? [];
+    expect(eastQueries.map((q) => q.MetricStat?.Metric)).toEqual([
+      {
+        Namespace: 'AWS/CloudFront',
+        MetricName: 'Requests',
+        Dimensions: [
+          { Name: 'DistributionId', Value: 'E1' },
+          { Name: 'Region', Value: 'Global' },
+        ],
+      },
+      expect.objectContaining({ MetricName: 'BytesDownloaded' }),
+    ]);
+    expect(westMock.commandCalls(GetMetricDataCommand)[0]?.args[0].input.MetricDataQueries).toHaveLength(8);
+    expect(key(cf)).toBe(resourceKeyFor('111122223333', 'global', 'CLOUDFRONT_DISTRIBUTION', 'E1'));
+    const cfUtil = result.utilization.get(key(cf));
+    expect(cfUtil?.metrics['Requests:Sum']).toMatchObject({
+      namespace: 'AWS/CloudFront',
+      availability: 'AVAILABLE',
+      stats: { sum: 30, datapoints: 3, zeroFraction: 0.3333 },
+    });
+    expect(result.utilization.size).toBe(2);
+    eastMock.restore();
+    westMock.restore();
+  });
+
+  it('keys Lambda provisioned concurrency per qualifier and reports utilization in percent', async () => {
+    const fn = lambdaFunction('fixture-api', ['live', '7']);
+    cwMock.on(GetMetricDataCommand).callsFake((input: GetMetricDataCommandInput) => ({
+      MetricDataResults: (input.MetricDataQueries ?? []).map((q) => {
+        const dims = q.MetricStat?.Metric?.Dimensions ?? [];
+        const resource = dims.find((d) => d.Name === 'Resource')?.Value;
+        if (resource === 'fixture-api:live')
+          return { Id: q.Id, Values: [0.05, 0.1, 0], StatusCode: 'Complete' };
+        if (resource === 'fixture-api:7') return { Id: q.Id, Values: [], StatusCode: 'Complete' };
+        return { Id: q.Id, Values: [1], StatusCode: 'Complete' };
+      }),
+    }));
+    const client = new CloudWatchClient({ region: 'us-east-1' });
+
+    const result = await collectUtilization(
+      [fn],
+      { cloudwatch: () => client },
+      {
+        lookbackDays: 30,
+        now: NOW,
+        logger: silentLogger,
+      },
+    );
+
+    const queries = cwMock.commandCalls(GetMetricDataCommand)[0]?.args[0].input.MetricDataQueries ?? [];
+    const live = queries.find((q) =>
+      q.MetricStat?.Metric?.Dimensions?.some((d) => d.Name === 'Resource' && d.Value === 'fixture-api:live'),
+    );
+    expect(live?.MetricStat).toMatchObject({
+      Stat: 'Maximum',
+      Metric: {
+        Namespace: 'AWS/Lambda',
+        MetricName: 'ProvisionedConcurrencyUtilization',
+        Dimensions: [
+          { Name: 'FunctionName', Value: 'fixture-api' },
+          { Name: 'Resource', Value: 'fixture-api:live' },
+        ],
+      },
+    });
+    const metrics = result.utilization.get(key(fn))?.metrics ?? {};
+    expect(Object.keys(metrics)).toHaveLength(10);
+    expect(metrics['ProvisionedConcurrencyUtilization:Maximum:live']).toMatchObject({
+      metricName: 'ProvisionedConcurrencyUtilization',
+      statistic: 'Maximum',
+      unit: 'Percent',
+      availability: 'AVAILABLE',
+      stats: { maximum: 10, minimum: 0, zeroFraction: 0.3333 },
+    });
+    expect(metrics['ProvisionedConcurrencyUtilization:Maximum:7']).toMatchObject({ availability: 'NO_DATA' });
+    expect(metrics['memory_utilization:Maximum']).toMatchObject({
+      namespace: 'LambdaInsights',
+      availability: 'AVAILABLE',
+    });
+    expect(metrics['Invocations:Sum']?.stats?.sum).toBe(1);
   });
 });

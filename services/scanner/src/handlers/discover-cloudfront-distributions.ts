@@ -2,6 +2,7 @@ import type { DiscoveryWorkerInput, DiscoveryWorkerOutput } from '@cloudsentry/s
 import { createStepHandler } from '../workflow/handler-factory';
 import { discoverType } from '../workflow/steps';
 
-export const handler = createStepHandler<DiscoveryWorkerOutput, DiscoveryWorkerInput>('CloudFrontDiscovery', (rt, input) =>
-  discoverType(rt, 'CLOUDFRONT_DISTRIBUTION', input),
+export const handler = createStepHandler<DiscoveryWorkerOutput, DiscoveryWorkerInput>(
+  'CloudFrontDiscovery',
+  (rt, input) => discoverType(rt, 'CLOUDFRONT_DISTRIBUTION', input),
 );
