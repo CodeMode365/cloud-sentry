@@ -1,0 +1,22 @@
+{
+  "name": "@cloudsentry/infrastructure",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "cdk": "cdk",
+    "synth": "cdk synth --quiet"
+  },
+  "dependencies": {
+    "@cloudsentry/shared-types": "workspace:*",
+    "aws-cdk-lib": "^2.277.0",
+    "constructs": "^10.8.1"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.1148.1",
+    "esbuild": "^0.28.2"
+  }
+}
