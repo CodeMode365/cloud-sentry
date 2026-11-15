@@ -41,6 +41,13 @@ describe.skipIf(!handlersPresent)('IAM least privilege', () => {
     expect(hasAssume(templates.api, 'api-accounts')).toBe(true);
   });
 
+  it('lets persist-results write its persisted.json artifact', () => {
+    const { templates } = synth();
+    const actions = statementsForFunction(templates.workflow, 'persist-results').flatMap(actionsOf);
+    expect(actions).toContain('s3:GetObject');
+    expect(actions).toContain('s3:PutObject');
+  });
+
   it('never grants DynamoDB Scan or table management', () => {
     const { templates } = synth();
     for (const template of Object.values(templates)) {

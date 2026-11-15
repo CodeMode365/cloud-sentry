@@ -140,7 +140,8 @@ export class WorkflowStack extends Stack {
         pricing: true,
         environment: { PRICING_REGION: 'us-east-1' },
       },
-      persistResults: { artifacts: 'read' },
+      // Reads normalized/detection/savings artifacts and writes persisted.json.
+      persistResults: { artifacts: 'readwrite' },
       generateSummary: { artifacts: 'readwrite' },
       sendNotifications: {
         artifacts: 'read',
