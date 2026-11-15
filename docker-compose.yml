@@ -1,0 +1,48 @@
+# Full CloudSentry stack for local demos: the application image + DynamoDB Local with persistent data.
+#
+#   docker compose up -d --build        # dashboard + API on http://localhost:8080
+#   docker compose logs -f app          # email confirmation codes are printed here (nothing is emailed)
+#
+# Scanning real AWS accounts from the container needs AWS credentials: see docker-compose.aws.yml and
+# docs/docker.md. Without them the app runs, but account verification, scans and pricing fail clearly.
+name: cloudsentry
+
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:2.6.1
+    command: ['-jar', 'DynamoDBLocal.jar', '-sharedDb', '-dbPath', '/home/dynamodblocal/data']
+    # The image's default user cannot write to a freshly created named volume.
+    user: root
+    volumes:
+      - dynamodb-data:/home/dynamodblocal/data
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cloudsentry:local
+    init: true
+    depends_on:
+      - dynamodb
+    ports:
+      - '8080:8080'
+    environment:
+      STAGE: local
+      AUTH_MODE: local
+      TABLE_NAME: cloudsentry-local
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+      AUTO_CREATE_TABLE: 'true'
+      # Plain HTTP locally. Put TLS in front and set COOKIE_SECURE=true anywhere else.
+      COOKIE_SECURE: 'false'
+      SCANS_IN_PROCESS: 'true'
+      PUBLIC_BASE_URL: http://localhost:8080
+      AWS_REGION: us-east-1
+      LOG_LEVEL: info
+    volumes:
+      - app-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  dynamodb-data:
+  app-data:

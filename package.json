@@ -20,7 +20,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "audit:deps": "pnpm audit --prod --audit-level high",
-    "cdk": "pnpm --filter @cloudsentry/infrastructure cdk"
+    "cdk": "pnpm --filter @cloudsentry/infrastructure cdk",
+    "docker:build": "docker build -t cloudsentry:local .",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

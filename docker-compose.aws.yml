@@ -1,0 +1,14 @@
+# Optional overlay: give the container read-only access to your AWS CLI configuration so it can assume
+# customer roles (verification, scans) and query the AWS Price List API.
+#
+#   AWS_PROFILE=cloudsentry-dev docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d
+#
+# Use a NON-ROOT profile: AWS does not allow the root user to call sts:AssumeRole. The profile needs
+# sts:AssumeRole on arn:aws:iam::*:role/CloudSentry* and pricing:GetProducts.
+services:
+  app:
+    environment:
+      AWS_PROFILE: ${AWS_PROFILE:?Set AWS_PROFILE to a non-root profile}
+      AWS_SDK_LOAD_CONFIG: '1'
+    volumes:
+      - ${HOME}/.aws:/home/node/.aws:ro

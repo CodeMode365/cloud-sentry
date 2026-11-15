@@ -1,0 +1,25 @@
+# Dependencies and build output are produced inside the image.
+**/node_modules
+**/.next
+**/.next-verify
+apps/web/out
+**/dist
+**/cdk.out
+**/coverage
+**/.turbo
+*.tsbuildinfo
+
+# Local state, secrets and VCS metadata never enter the image.
+.local
+.env
+.env.*
+!.env.example
+.git
+*.log
+.DS_Store
+
+# Not needed to build the image.
+docs
+Dockerfile
+.dockerignore
+docker-compose*.yml
