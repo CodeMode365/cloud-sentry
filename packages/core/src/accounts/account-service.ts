@@ -35,6 +35,8 @@ export class AccountService {
 
   async create(auth: AuthContext, input: CreateAccountRequest): Promise<CreateAccountResponse> {
     requireRole(auth, 'ADMIN');
+    // Resolve the trusted platform account first so a failure never leaves a half-created account behind.
+    const platformAccountId = await this.platform.getAccountId();
     const now = this.ctx.clock.now().toISOString();
     const account: CloudAccount = {
       tenantId: auth.tenantId,
@@ -62,17 +64,20 @@ export class AccountService {
       userId: auth.userId,
       accountId: input.accountId,
     });
-    return { account, onboarding: await this.onboardingFor(account) };
+    return { account, onboarding: await this.onboardingFor(account, platformAccountId) };
   }
 
   async onboarding(auth: AuthContext, accountId: string): Promise<AccountOnboardingInstructions> {
     return this.onboardingFor(await this.get(auth, accountId));
   }
 
-  private async onboardingFor(account: CloudAccount): Promise<AccountOnboardingInstructions> {
+  private async onboardingFor(
+    account: CloudAccount,
+    platformAccountId?: string,
+  ): Promise<AccountOnboardingInstructions> {
     const parsed = parseRoleArn(account.roleArn);
     return buildOnboardingInstructions({
-      platformAccountId: await this.platform.getAccountId(),
+      platformAccountId: platformAccountId ?? (await this.platform.getAccountId()),
       customerAccountId: account.accountId,
       roleName: parsed?.roleName ?? 'CloudSentryReadOnlyRole',
       externalId: account.externalId,

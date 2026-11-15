@@ -200,3 +200,20 @@ describe('authorization and session cookies', () => {
     expect(decodeRefreshCookie('../../etc.short')).toBeNull();
   });
 });
+
+describe('platform identity', () => {
+  it('maps missing credentials to an actionable upstream error and retries later', async () => {
+    const { mockClient } = await import('aws-sdk-client-mock');
+    const { GetCallerIdentityCommand, STSClient } = await import('@aws-sdk/client-sts');
+    const { StsPlatformIdentity } = await import('./accounts/platform-identity');
+    const sts = mockClient(STSClient);
+    sts
+      .on(GetCallerIdentityCommand)
+      .rejectsOnce(new Error('Could not load credentials from any providers'))
+      .resolves({ Account: '999999999999' });
+    const identity = new StsPlatformIdentity(new STSClient({ region: 'us-east-1' }));
+    await expect(identity.getAccountId()).rejects.toMatchObject({ code: 'UPSTREAM_ERROR', httpStatus: 502 });
+    await expect(identity.getAccountId()).resolves.toBe('999999999999');
+    sts.restore();
+  });
+});
