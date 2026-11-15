@@ -68,6 +68,23 @@ export function isTerminalScan(status: ScanExecution['status']): boolean {
   return TERMINAL_SCAN_STATUSES.includes(status);
 }
 
+/** How long after completion to keep polling for SendNotifications to record its result. */
+const NOTIFICATION_SETTLE_MS = 60_000;
+
+/**
+ * Whether the scan detail view should keep polling. The workflow marks a scan COMPLETED /
+ * PARTIALLY_COMPLETED in GenerateScanSummary, before SendNotifications runs, so stopping at the
+ * terminal status would freeze that step as running. Keep polling briefly until it settles.
+ */
+export function shouldPollScan(scan: ScanExecution, now: number = Date.now()): boolean {
+  if (!isTerminalScan(scan.status)) return true;
+  if (scan.status !== 'COMPLETED' && scan.status !== 'PARTIALLY_COMPLETED') return false;
+  const notify = scan.steps.SendNotifications;
+  if (notify && notify.status !== 'RUNNING') return false;
+  const completedAt = scan.completedAt ? Date.parse(scan.completedAt) : Number.NaN;
+  return Number.isFinite(completedAt) && now - completedAt < NOTIFICATION_SETTLE_MS;
+}
+
 // ---------------- Identity ----------------
 export function useMe() {
   return useQuery({ queryKey: queryKeys.me, queryFn: () => api.get<MeResponse>('/auth/me') });
@@ -198,7 +215,7 @@ export function useScan(scanId: string | null) {
     enabled: !!scanId,
     refetchInterval: (q) => {
       const scan = q.state.data as ScanExecution | undefined;
-      return scan && !isTerminalScan(scan.status) ? 5000 : false;
+      return scan && shouldPollScan(scan) ? 5000 : false;
     },
   });
 }
