@@ -73,3 +73,15 @@ describe('passwords', () => {
     expect(passwordSchema.safeParse('Correct-Horse-9-Battery').success).toBe(true);
   });
 });
+
+describe('environment parsing', () => {
+  it('treats empty values as unset', async () => {
+    const { apiEnvSchema, parseEnv } = await import('./index');
+    const env = parseEnv(apiEnvSchema, { TABLE_NAME: 't', PLATFORM_ACCOUNT_ID: '', STATE_MACHINE_ARN: '' });
+    expect(env.PLATFORM_ACCOUNT_ID).toBeUndefined();
+    expect(env.STATE_MACHINE_ARN).toBeUndefined();
+    expect(() => parseEnv(apiEnvSchema, { TABLE_NAME: 't', PLATFORM_ACCOUNT_ID: '123' })).toThrow(
+      /PLATFORM_ACCOUNT_ID/,
+    );
+  });
+});
