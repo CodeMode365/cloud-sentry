@@ -1,3 +1,5 @@
+<img src="assets/banner.png" alt="CloudSentry documentation" width="100%">
+
 # Deploying CloudSentry
 
 CloudSentry is deployed with the AWS CDK app in `infrastructure/`. The app creates six stacks per stage

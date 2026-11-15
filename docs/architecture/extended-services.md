@@ -1,3 +1,5 @@
+<img src="../assets/banner.png" alt="CloudSentry documentation" width="100%">
+
 # Extended service coverage
 
 CloudSentry scans eight services beyond the original EC2/EBS/EIP/RDS/snapshot/NAT/ELB set: Lambda, EKS, ElastiCache,

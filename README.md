@@ -1,8 +1,20 @@
+<p align="center">
+  <img src="docs/assets/cover.png" alt="CloudSentry: find cloud waste, understand the impact, optimize with confidence. Read-only cost optimization for AWS accounts." width="100%">
+</p>
+
 # CloudSentry
 
 **Find cloud waste. Understand the impact. Optimize with confidence.**
 
-## What is CloudSentry?
+<p>
+  <img src="docs/assets/icons/book.svg" width="20" height="20" align="absmiddle" alt=""> <a href="docs/README.md">Documentation</a> &nbsp;·&nbsp;
+  <img src="docs/assets/icons/layers.svg" width="20" height="20" align="absmiddle" alt=""> <a href="docs/architecture/overview.md">Architecture</a> &nbsp;·&nbsp;
+  <img src="docs/assets/icons/upload.svg" width="20" height="20" align="absmiddle" alt=""> <a href="docs/deployment.md">Deploy to AWS</a> &nbsp;·&nbsp;
+  <img src="docs/assets/icons/terminal.svg" width="20" height="20" align="absmiddle" alt=""> <a href="docs/development.md">Run locally</a> &nbsp;·&nbsp;
+  <img src="docs/assets/icons/braces.svg" width="20" height="20" align="absmiddle" alt=""> <a href="docs/api/README.md">API reference</a>
+</p>
+
+## <img src="docs/assets/icons/cloud.svg" width="28" height="28" align="absmiddle" alt=""> What is CloudSentry?
 
 Companies that run on Amazon Web Services (AWS) often pay for things they no longer use: servers left running
 after a project ended, disks that are not attached to anything, databases sized for traffic that never came,
@@ -16,15 +28,17 @@ clean up, with an estimate of how much money each change would save per month.
 CloudSentry only **looks**. It never changes, stops or deletes anything in your account. Every suggestion is a
 recommendation for a person to review and apply.
 
-## Who is it for?
+## <img src="docs/assets/icons/users.svg" width="28" height="28" align="absmiddle" alt=""> Who is it for?
 
-| Reader                                | What CloudSentry gives you                                                                               |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Business owners, finance and managers | A simple view of cloud spend and a ranked list of savings opportunities in dollars per month.            |
-| Engineering and operations teams      | Evidence for each finding (usage metrics, configuration, thresholds) and step-by-step suggested actions. |
-| FinOps / cost teams                   | Scheduled scans, tracking of what was accepted or dismissed, and downloadable reports.                   |
+| Reader                                                                                                                        | What CloudSentry gives you                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| <img src="docs/assets/icons/chart.svg" width="20" height="20" align="absmiddle" alt=""> Business owners, finance and managers | A simple view of cloud spend and a ranked list of savings opportunities in dollars per month.            |
+| <img src="docs/assets/icons/terminal.svg" width="20" height="20" align="absmiddle" alt=""> Engineering and operations teams   | Evidence for each finding (usage metrics, configuration, thresholds) and step-by-step suggested actions. |
+| <img src="docs/assets/icons/dollar.svg" width="20" height="20" align="absmiddle" alt=""> FinOps / cost teams                  | Scheduled scans, tracking of what was accepted or dismissed, and downloadable reports.                   |
 
-## How it works (in plain language)
+## <img src="docs/assets/icons/workflow.svg" width="28" height="28" align="absmiddle" alt=""> How it works (in plain language)
+
+<img src="docs/assets/how-it-works.svg" alt="Six steps: connect a read-only role, scan resources and usage, detect waste with transparent rules, estimate savings with AWS list prices, review recommendations, stay informed with alerts and reports." width="100%">
 
 1. **Connect an account safely.** You create a read-only access role in your AWS account using a ready-made
    template that CloudSentry generates. No passwords or secret keys are shared.
@@ -39,7 +53,7 @@ recommendation for a person to review and apply.
 6. **Stay informed.** Scans can run on a schedule (daily, every 6 hours, weekly or custom), email alerts can be sent
    for important findings, and PDF or JSON reports can be downloaded.
 
-## What CloudSentry checks
+## <img src="docs/assets/icons/search.svg" width="28" height="28" align="absmiddle" alt=""> What CloudSentry checks
 
 CloudSentry covers 15 AWS services (16 resource types) with 27 detection rules.
 
@@ -64,7 +78,7 @@ CloudSentry covers 15 AWS services (16 resource types) with 27 detection rules.
 Some rules need optional AWS monitoring features: Lambda memory checks need **Lambda Insights**, and EKS node and
 pod checks need **Container Insights**. Without them, those rules report "not evaluated".
 
-## Safe and honest by design
+## <img src="docs/assets/icons/shield.svg" width="28" height="28" align="absmiddle" alt=""> Safe and honest by design
 
 - **Read-only access.** The access role only allows "describe", "list" and "get" actions. CloudSentry cannot
   modify resources and never reads your data (for example, it never reads database items or file contents).
@@ -76,21 +90,21 @@ pod checks need **Container Insights**. Without them, those rules report "not ev
 - **Separated customers.** Each organization only ever sees its own accounts and results.
 - **Clearly labelled sample data.** Demo data created for local development is marked "Synthetic" everywhere.
 
-## What you see in the dashboard
+## <img src="docs/assets/icons/dashboard.svg" width="28" height="28" align="absmiddle" alt=""> What you see in the dashboard
 
-| Page            | Shows                                                                                               |
-| --------------- | --------------------------------------------------------------------------------------------------- |
-| Overview        | Month-to-date spend, potential monthly savings, findings by severity, cost trend, top opportunities |
-| Cloud Accounts  | Connected accounts, a guided connection wizard, connection health, rename and remove                |
-| Resources       | Every discovered resource with usage, tags and related findings                                     |
-| Cost Analytics  | Monthly and daily spend, cost by service and region, month-over-month change, unusual spikes        |
-| Findings        | Detected issues with evidence, severity and history                                                 |
-| Recommendations | Suggested actions, estimated savings, confidence and risk; accept, dismiss or review                |
-| Scan History    | Every scan with its steps, results and any errors                                                   |
-| Reports         | Downloadable PDF and JSON reports                                                                   |
-| Settings        | Scan schedules, email notifications, detection thresholds, profile                                  |
+| Page                                                                                                        | Shows                                                                                               |
+| ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| <img src="docs/assets/icons/dashboard.svg" width="20" height="20" align="absmiddle" alt=""> Overview        | Month-to-date spend, potential monthly savings, findings by severity, cost trend, top opportunities |
+| <img src="docs/assets/icons/cloud.svg" width="20" height="20" align="absmiddle" alt=""> Cloud Accounts      | Connected accounts, a guided connection wizard, connection health, rename and remove                |
+| <img src="docs/assets/icons/server.svg" width="20" height="20" align="absmiddle" alt=""> Resources          | Every discovered resource with usage, tags and related findings                                     |
+| <img src="docs/assets/icons/chart.svg" width="20" height="20" align="absmiddle" alt=""> Cost Analytics      | Monthly and daily spend, cost by service and region, month-over-month change, unusual spikes        |
+| <img src="docs/assets/icons/alert.svg" width="20" height="20" align="absmiddle" alt=""> Findings            | Detected issues with evidence, severity and history                                                 |
+| <img src="docs/assets/icons/clipboard.svg" width="20" height="20" align="absmiddle" alt=""> Recommendations | Suggested actions, estimated savings, confidence and risk; accept, dismiss or review                |
+| <img src="docs/assets/icons/history.svg" width="20" height="20" align="absmiddle" alt=""> Scan History      | Every scan with its steps, results and any errors                                                   |
+| <img src="docs/assets/icons/file.svg" width="20" height="20" align="absmiddle" alt=""> Reports              | Downloadable PDF and JSON reports                                                                   |
+| <img src="docs/assets/icons/sliders.svg" width="20" height="20" align="absmiddle" alt=""> Settings          | Scan schedules, email notifications, detection thresholds, profile                                  |
 
-## Key terms
+## <img src="docs/assets/icons/tag.svg" width="28" height="28" align="absmiddle" alt=""> Key terms
 
 | Term               | Meaning                                                                                         |
 | ------------------ | ----------------------------------------------------------------------------------------------- |
@@ -101,9 +115,16 @@ pod checks need **Container Insights**. Without them, those rules report "not ev
 | Estimated savings  | CloudSentry's calculation of the monthly saving if you apply a recommendation. Not guaranteed.  |
 | Cross-account role | The read-only access role you create in your AWS account for CloudSentry.                       |
 
-## Architecture (for technical readers)
+## <img src="docs/assets/icons/layers.svg" width="28" height="28" align="absmiddle" alt=""> Architecture (for technical readers)
 
 CloudSentry is fully serverless and costs almost nothing when idle.
+
+<img src="docs/assets/architecture.svg" alt="CloudSentry architecture: CloudFront serves the dashboard from S3 and routes /api/v1 to API Gateway with Cognito; Lambda functions use DynamoDB and S3; manual or scheduled scans run a Step Functions workflow that assumes a read-only role in the customer account and sends email alerts through SNS." width="100%">
+
+<img src="docs/assets/scan-workflow.svg" alt="The twelve scan steps run by AWS Step Functions, from validating the account to sending notifications." width="100%">
+
+<details>
+<summary>Text version of the architecture</summary>
 
 ```
 Browser
@@ -125,6 +146,8 @@ CloudFront ---- /            --> S3 (static Next.js dashboard)
 EventBridge Scheduler --> scheduled-scan Lambda --> same scan workflow
 ```
 
+</details>
+
 | AWS service                            | Role in CloudSentry                                                              |
 | -------------------------------------- | -------------------------------------------------------------------------------- |
 | AWS Lambda                             | All compute: API handlers and every scan step                                    |
@@ -143,7 +166,7 @@ EventBridge Scheduler --> scheduled-scan Lambda --> same scan workflow
 Everything is defined in TypeScript with the AWS CDK (`infrastructure/`). Built with pnpm and Turborepo:
 Next.js 15 dashboard, Node.js 22 Lambdas, AWS SDK v3, Zod validation, Vitest tests.
 
-## Project status
+## <img src="docs/assets/icons/flag.svg" width="28" height="28" align="absmiddle" alt=""> Project status
 
 | Area                                                                                       | State                                                                                                                                                |
 | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -154,9 +177,9 @@ Next.js 15 dashboard, Node.js 22 Lambdas, AWS SDK v3, Zod validation, Vitest tes
 | Docker image (local demo)                                                                  | Builds and runs (`docker compose up`); account creation without AWS credentials fixed but not yet re-checked in the container                        |
 | Real scan of a live AWS account                                                            | **Not yet verified**                                                                                                                                 |
 
-## Getting started
+## <img src="docs/assets/icons/upload.svg" width="28" height="28" align="absmiddle" alt=""> Getting started
 
-### Run locally (development)
+### <img src="docs/assets/icons/terminal.svg" width="22" height="22" align="absmiddle" alt=""> Run locally (development)
 
 Prerequisites: Node.js 22, pnpm 9, Docker (for DynamoDB Local).
 
@@ -170,7 +193,7 @@ pnpm dev:web          # Dashboard on http://localhost:3000
 Register in the dashboard; locally the email confirmation code is printed in the API log. To explore with clearly
 labelled sample data: `pnpm seed:synthetic -- --email you@example.com`. Details: [docs/development.md](docs/development.md).
 
-### Run with Docker (local demo)
+### <img src="docs/assets/icons/box.svg" width="22" height="22" align="absmiddle" alt=""> Run with Docker (local demo)
 
 ```bash
 docker compose up -d --build     # dashboard + API on http://localhost:8080, with DynamoDB Local
@@ -179,7 +202,7 @@ docker compose logs -f app       # shows the email confirmation code
 
 To scan real AWS accounts from the container, add `-f docker-compose.aws.yml` with a non-root `AWS_PROFILE`.
 
-### Deploy to AWS (serverless)
+### <img src="docs/assets/icons/cloud.svg" width="22" height="22" align="absmiddle" alt=""> Deploy to AWS (serverless)
 
 See [docs/deployment.md](docs/deployment.md). Use a non-root IAM identity:
 
@@ -189,7 +212,7 @@ pnpm cdk bootstrap aws://<ACCOUNT_ID>/us-east-1
 pnpm cdk deploy --all -c stage=dev
 ```
 
-### Quality checks
+### <img src="docs/assets/icons/check.svg" width="22" height="22" align="absmiddle" alt=""> Quality checks
 
 ```bash
 pnpm typecheck && pnpm lint && pnpm test      # add --concurrency=1 on low-memory machines
@@ -197,7 +220,7 @@ pnpm audit:deps
 pnpm --filter @cloudsentry/recommendation verify:pricing us-east-1   # live Price List check (read-only)
 ```
 
-## Repository layout
+## <img src="docs/assets/icons/folder.svg" width="28" height="28" align="absmiddle" alt=""> Repository layout
 
 ```
 apps/web                 Next.js dashboard (static export)
@@ -212,15 +235,19 @@ tests                    Cross-package integration tests
 docs                     Architecture, security, API, decisions, deployment
 ```
 
-## Documentation
+## <img src="docs/assets/icons/book.svg" width="28" height="28" align="absmiddle" alt=""> Documentation
 
-- [Architecture overview and contracts](docs/architecture/overview.md)
-- [Supported services contract](docs/architecture/extended-services.md)
-- [Discovery and metrics](docs/architecture/discovery-and-metrics.md)
-- [Detection rules](docs/architecture/detection-rules.md)
-- [Savings estimation](docs/architecture/savings-estimation.md)
-- [API reference](docs/api/README.md)
-- [Security overview](docs/security/overview.md) and [IAM design](docs/security/iam.md)
-- [Architecture decision records](docs/decisions/)
-- [Local development](docs/development.md)
-- [Deployment](docs/deployment.md)
+Start at the [documentation home](docs/README.md), or jump straight in:
+
+|                                                                                            | Guide                                                                                 |                                        |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | -------------------------------------- |
+| <img src="docs/assets/icons/layers.svg" width="20" height="20" align="absmiddle" alt="">   | [Architecture overview and contracts](docs/architecture/overview.md)                  | How the pieces fit together            |
+| <img src="docs/assets/icons/server.svg" width="20" height="20" align="absmiddle" alt="">   | [Supported services contract](docs/architecture/extended-services.md)                 | Every AWS service CloudSentry scans    |
+| <img src="docs/assets/icons/activity.svg" width="20" height="20" align="absmiddle" alt=""> | [Discovery and metrics](docs/architecture/discovery-and-metrics.md)                   | Finding resources, usage and costs     |
+| <img src="docs/assets/icons/alert.svg" width="20" height="20" align="absmiddle" alt="">    | [Detection rules](docs/architecture/detection-rules.md)                               | What counts as waste, and why          |
+| <img src="docs/assets/icons/dollar.svg" width="20" height="20" align="absmiddle" alt="">   | [Savings estimation](docs/architecture/savings-estimation.md)                         | How savings are priced                 |
+| <img src="docs/assets/icons/braces.svg" width="20" height="20" align="absmiddle" alt="">   | [API reference](docs/api/README.md)                                                   | REST endpoints (v1)                    |
+| <img src="docs/assets/icons/shield.svg" width="20" height="20" align="absmiddle" alt="">   | [Security overview](docs/security/overview.md) and [IAM design](docs/security/iam.md) | Threats, controls and every permission |
+| <img src="docs/assets/icons/book.svg" width="20" height="20" align="absmiddle" alt="">     | [Architecture decision records](docs/decisions/)                                      | Why things are built this way          |
+| <img src="docs/assets/icons/terminal.svg" width="20" height="20" align="absmiddle" alt=""> | [Local development](docs/development.md)                                              | Run everything on your machine         |
+| <img src="docs/assets/icons/upload.svg" width="20" height="20" align="absmiddle" alt="">   | [Deployment](docs/deployment.md)                                                      | Deploy the serverless stacks to AWS    |

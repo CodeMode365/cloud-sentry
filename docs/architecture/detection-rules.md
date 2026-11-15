@@ -1,3 +1,5 @@
+<img src="../assets/banner.png" alt="CloudSentry documentation" width="100%">
+
 # Detection Rules
 
 The waste-detection engine (`services/analyzer`) is deterministic: the same normalized resources,

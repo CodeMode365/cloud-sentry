@@ -1,3 +1,5 @@
+<img src="../assets/banner.png" alt="CloudSentry documentation" width="100%">
+
 # Security overview
 
 CloudSentry is read-only towards customer AWS accounts. This document lists the main threats and the controls

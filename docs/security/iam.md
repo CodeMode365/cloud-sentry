@@ -1,3 +1,5 @@
+<img src="../assets/banner.png" alt="CloudSentry documentation" width="100%">
+
 # IAM and Authentication Design
 
 This document describes every permission CloudSentry holds, on both sides of the cross-account boundary,

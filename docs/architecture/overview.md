@@ -1,3 +1,5 @@
+<img src="../assets/banner.png" alt="CloudSentry documentation" width="100%">
+
 # CloudSentry Architecture
 
 CloudSentry is a read-only AWS FinOps platform. It assumes a customer-deployed IAM role, discovers
@@ -8,6 +10,8 @@ This document is the authoritative contract between components. Component owners
 contracts below without updating this file.
 
 ## 1. Layers
+
+<img src="../assets/architecture.svg" alt="CloudSentry architecture: CloudFront serves the dashboard from S3 and routes /api/v1 to API Gateway with Cognito; Lambda functions use DynamoDB and S3; manual or scheduled scans run a Step Functions workflow that assumes a read-only role in the customer account and sends email alerts through SNS." width="100%">
 
 ```
 Browser (Next.js static export, served by CloudFront)
@@ -102,6 +106,8 @@ State is small JSON (`ScanWorkflowState` in shared-types). Every step writes bul
 `reports/<tenantId>/<accountId|all>/<type>/<reportId>.<pdf|json>`. Separate top-level prefixes allow separate
 lifecycle retention. (The spec's suggested `accounts/{accountId}/...` layout was extended with the tenant ID
 because the same AWS account may be connected by more than one tenant.)
+
+<img src="../assets/scan-workflow.svg" alt="The twelve scan steps run by AWS Step Functions, from validating the account to sending notifications. Metrics, costs and notifications never fail a scan; any unexpected error marks the scan failed." width="100%">
 
 | State                     | Lambda handler (path relative to repo root)                                                                                                                                                                                                                   | Notes                                                                                                                                                                                                                                                                                                                           |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

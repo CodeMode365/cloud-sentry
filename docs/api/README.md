@@ -1,3 +1,5 @@
+<img src="../assets/banner.png" alt="CloudSentry documentation" width="100%">
+
 # CloudSentry API reference (v1)
 
 Base URL: `https://<dashboard-domain>/api/v1` (CloudFront routes `/api/*` to API Gateway). Locally:

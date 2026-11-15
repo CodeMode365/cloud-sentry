@@ -1,3 +1,5 @@
+<img src="../assets/banner.png" alt="CloudSentry documentation" width="100%">
+
 # Discovery, Metrics and Cost Collection
 
 Source: `services/scanner/src/{discovery,metrics,costs,normalize}`. These modules are pure with respect to

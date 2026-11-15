@@ -1,3 +1,5 @@
+<img src="../assets/banner.png" alt="CloudSentry documentation" width="100%">
+
 # Savings Estimation
 
 `services/recommendation` turns detected issues into recommendations and prices them. All savings are

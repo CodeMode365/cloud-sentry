@@ -1,3 +1,5 @@
+<img src="assets/banner.png" alt="CloudSentry documentation" width="100%">
+
 # Local development
 
 ## What runs locally
